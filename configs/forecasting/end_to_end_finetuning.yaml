@@ -15,7 +15,8 @@ forecast_horizon: 96
 # "avid-moon-55" "proud-dust-41" "curious-blaze-53" 
 # "laced-firebrand-51" "prime-music-50" "fast-pyramid-63" 
 # "fearless-planet-52" "snowy-shape-64"
-pretraining_run_name: "fast-pyramid-63" # "fearless-planet-52"
+# pretraining_run_name: "fast-pyramid-63" # "fearless-planet-52"
+pretraining_run_name: "fearless-planet-52" # "fearless-planet-52"
 pretraining_opt_steps: null
 pct_start: 0.3
 max_epoch: 50
@@ -33,8 +34,11 @@ model_name: "MOMENT"
 seq_len: 512
 patch_len: 8
 patch_stride_len: 8
-transformer_backbone: 'google/flan-t5-base' # 'google/flan-t5-base' 'google/flan-t5-large'
+# transformer_backbone: 'google/flan-t5-base' # 'google/flan-t5-base' 'google/flan-t5-large'
+transformer_backbone: 'google/flan-t5-large' # 'google/flan-t5-base' 'google/flan-t5-large'
 add_positional_embedding: False
 set_input_mask: True # True by default 
 head_dropout: 0.1
 
+
+torch_dtype: "float16"

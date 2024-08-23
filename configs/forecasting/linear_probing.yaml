@@ -1,7 +1,7 @@
 # Data loader parameters
 task_name: "long-horizon-forecasting"
-train_batch_size : 64 # 1024 2048 3072 4096
-val_batch_size: 256 # 1024 2048 3072 4096 
+# train_batch_size : 64 # 1024 2048 3072 4096
+# val_batch_size: 256 # 1024 2048 3072 4096 
 shuffle: True
 num_workers: 5
 pin_memory: True
@@ -43,3 +43,9 @@ add_positional_embedding: False
 set_input_mask: True # True by default 
 head_dropout: 0.1
 weight_decay: 0
+
+
+# use_amp: False
+torch_dtype: "float16"
+train_batch_size : 4 # 1024 2048 3072 4096
+val_batch_size: 4 # 1024 2048 3072 4096 

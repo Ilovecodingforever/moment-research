@@ -2,6 +2,10 @@
 notebooks/development/data/*
 notebooks/development/*.py
 wandb/
+
+results/
+
+
 # exclude shell scripts in root directory
 /*.sh
 .env

@@ -6,13 +6,18 @@
 
 ### ETTm2
 
+export PYTHONPATH="/home/scratch/mingzhul/moment-research/"
+
 # ### MOMENT
-# python3 scripts/finetuning/forecasting.py\
 #  --finetuning_mode 'linear-probing'\
-#  --config 'configs/forecasting/linear_probing.yaml'\
-#  --gpu_id 6\
-#  --forecast_horizon 96\
-#  --dataset_names '/TimeseriesDatasets/forecasting/autoformer/ETTm2.csv'
+python3 scripts/finetuning/forecasting.py\
+ --finetuning_mode 'end-to-end'\
+ --config 'configs/forecasting/end_to_end_finetuning.yaml'\
+ --gpu_id 1\
+ --forecast_horizon 96\
+ --dataset_names 'data/Timeseries-PILE/forecasting/autoformer/ETTm2.csv'\
+ --train_batch_size 4\
+ --val_batch_size 4\
 
 # python3 scripts/finetuning/forecasting.py\
 #  --finetuning_mode 'linear-probing'\

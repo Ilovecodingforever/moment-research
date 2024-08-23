@@ -6,14 +6,16 @@
 
 ### ETTh1
 
+export PYTHONPATH="/home/scratch/mingzhul/moment-research/"
+
 ### MOMENT
-# python scripts/finetuning/forecasting.py\
-#  --finetuning_mode 'linear-probing'\
-#  --config 'configs/forecasting/linear_probing.yaml'\
-#  --gpu_id 0\
-#  --forecast_horizon 96\
-#  --init_lr 0.0001\
-#  --dataset_names '/TimeseriesDatasets/forecasting/autoformer/ETTh1.csv'
+python scripts/finetuning/forecasting.py\
+ --finetuning_mode 'linear-probing'\
+ --config 'configs/forecasting/linear_probing.yaml'\
+ --gpu_id 1\
+ --forecast_horizon 96\
+ --init_lr 0.0001\
+ --dataset_names 'data/Timeseries-PILE/forecasting/autoformer/ETTh1.csv'
 
 # python scripts/finetuning/forecasting.py\
 #  --finetuning_mode 'linear-probing'\
