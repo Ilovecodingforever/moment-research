@@ -4,6 +4,7 @@ notebooks/development/*.py
 wandb/
 
 results/
+data/
 
 
 # exclude shell scripts in root directory

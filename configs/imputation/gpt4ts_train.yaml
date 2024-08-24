@@ -20,9 +20,10 @@ pad_constant_values : null
 output_type: 'multivariate' # 'multivariate' 
 
 # Experiment parameters
-use_amp: True
+# use_amp: True
+use_amp: False
 pct_start: 0.3
-max_epoch: 5
+# max_epoch: 5
 anomaly_criterion: 'mse'
 lr_scheduler_type: 'onecyclelr' 
 finetuning_mode: "end-to-end" # "end-to-end"
@@ -49,7 +50,8 @@ d_ff: 768
     
     
     
-    
+torch_dtype: "float16"
+max_epoch: 10
     
     
     

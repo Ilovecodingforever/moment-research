@@ -13,7 +13,7 @@ NOTES = "Pre-training GPT4TS for imputation"
 
 def imputation(
     config_path: str = "../../configs/imputation/gpt4ts_train.yaml",
-    default_config_path: str = "../../configs/default.yaml",
+    default_config_path: str = "configs/default.yaml",
     gpu_id: int = 0,
     train_batch_size: int = 64,
     val_batch_size: int = 256,
