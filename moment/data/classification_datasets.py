@@ -221,6 +221,11 @@ class ClassificationDataset(TaskDataset):
         train_path = os.path.join("/".join(root_path), self.series + "_TRAIN.ts")
         _, train_labels = load_from_tsfile(train_path)
 
+
+        self.train_labels = train_labels
+
+
+
         if self.data_split == "train" or self.data_split == "val":
             path = os.path.join("/".join(root_path), self.series + "_TRAIN.ts")
         if self.data_split == "test":
@@ -275,7 +280,8 @@ class ClassificationDataset(TaskDataset):
     def __getitem__(self, index):
         assert index < self.__len__()
 
-        timeseries = self.data[:, index]
+        # timeseries = self.data[:, index]
+        timeseries = self.data[..., index]
         timeseries_len = len(timeseries)
         labels = (
             self.labels[index,].astype(int)
@@ -296,9 +302,17 @@ class ClassificationDataset(TaskDataset):
             timeseries, input_mask = downsample_timeseries(
                 timeseries, self.seq_len, sampling_type=self.downsampling_type
             )
+            
+        
+        # univariate
+        if len(timeseries.shape) == 1:
+            timeseries = np.expand_dims(timeseries, axis=0)
+        else:
+            timeseries = timeseries.T
 
         return TimeseriesData(
-            timeseries=np.expand_dims(timeseries, axis=0),
+            # timeseries=np.expand_dims(timeseries, axis=0),
+            timeseries=timeseries,
             labels=labels,
             input_mask=input_mask,
             name=self.dataset_name,

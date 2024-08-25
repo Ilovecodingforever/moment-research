@@ -12,6 +12,7 @@ python3 scripts/baselines/gpt4ts_long_horizon_forecasting.py\
  --gpu_id 3\
  --n_channels 7\
  --dataset_names 'data/Timeseries-PILE/forecasting/autoformer/national_illness.csv'\
+ --random_seed 0\
 
 
 

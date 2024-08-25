@@ -43,3 +43,11 @@ d_layers: 1
 top_k: 3 
 num_kernels: 6
 forecast_horizon: 0
+
+
+
+    
+torch_dtype: "float16"
+max_epoch: 10
+    
+

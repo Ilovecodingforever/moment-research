@@ -3,35 +3,48 @@ from typing import Optional
 
 import torch
 
-
-import sys
-sys.path.append("/Users/crl/Library/CloudStorage/Box-Box/research/Auton/LLM/moment-research/")
-
-
 from moment.common import PATHS
-from moment.tasks.imputation_finetune import ImputationFinetuning
+from moment.tasks.forecast_finetune import ForecastFinetuning
 from moment.utils.config import Config
 from moment.utils.utils import control_randomness, make_dir_if_not_exists, parse_config
 
-NOTES = "Pre-training TimesNet for imputation"
+NOTES = "Train TimesNet on source short-horizon forecasting datasets"
+
+HORIZON_MAPPING = {
+    "hourly": 48,
+    "daily": 14,
+    "weekly": 13,
+    "monthly": 18,
+    "other": 8,
+    "quarterly": 8,
+    "yearly": 6,
+}
 
 
-def imputation(
-    config_path: str = "../../configs/imputation/timesnet_train.yaml",
+def forecasting(
+    config_path: str = "../../configs/forecasting/timesnet.yaml",
     default_config_path: str = "configs/default.yaml",
     gpu_id: int = 0,
     train_batch_size: int = 64,
     val_batch_size: int = 256,
+    finetuning_mode: str = "end-to-end",
+    init_lr: Optional[float] = None,
+    max_epoch: int = 10,
+    dataset_names: str = "/TimeseriesDatasets/forecasting/monash/m3_monthly_dataset.tsf",
+    random_seed: int = 13,
+    forecast_horizon: int = 24,
+    n_channels: int = 1,
     d_model: int = 16,
     d_ff: int = 16,
-    init_lr: Optional[float] = None,
-    n_channels: int = 7,
-    dataset_names: str = "/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
-    random_seed: int = 13,
 ) -> None:
     config = Config(
         config_file_path=config_path, default_config_file_path=default_config_path
     ).parse()
+
+    if isinstance(dataset_names, str):
+        data_name = dataset_names.split("/")[-1].split(".")[0]
+        frequency = data_name.split("_")[1]
+        data_collection = data_name.split("_")[0]
 
     # Control randomness
     control_randomness(random_seed)
@@ -43,19 +56,22 @@ def imputation(
     make_dir_if_not_exists(config["checkpoint_path"])
 
     # Setup arguments
+    args.source_dataset = f"{data_collection}_{frequency}"
+    # args.forecast_horizon = HORIZON_MAPPING[frequency]
+    args.forecast_horizon = forecast_horizon
     args.train_batch_size = train_batch_size
     args.val_batch_size = val_batch_size
-    args.finetuning_mode = "end-to-end"
+    args.finetuning_mode = finetuning_mode
+    args.max_epoch = max_epoch
     args.dataset_names = dataset_names
-    args.d_model = d_model
-    args.n_channels = n_channels
-    args.d_ff = d_ff
     if init_lr is not None:
         args.init_lr = init_lr
+        
+    args.n_channels = n_channels    
+    
 
     print(f"Running experiments with config:\n{args}\n")
-
-    task_obj = ImputationFinetuning(args=args)
+    task_obj = ForecastFinetuning(args=args)
 
     # Setup a W&B Logger
     task_obj.setup_logger(notes=NOTES)
@@ -78,33 +94,51 @@ if __name__ == "__main__":
         "--val_batch_size", type=int, default=256, help="Validation batch size"
     )
     parser.add_argument(
-        "--init_lr", type=float, default=0.00005, help="Peak learning rate"
+        "--init_lr", type=float, default=0.001, help="Peak learning rate"
     )
-    parser.add_argument("--n_channels", type=int, default=7, help="Number of channels")
-    parser.add_argument("--d_model", type=int, default=16, help="Model dimension")
-    parser.add_argument("--d_ff", type=int, default=16, help="Model dimension")
+    parser.add_argument(
+        "--finetuning_mode", type=str, default="end-to-end", help="Finetuning mode"
+    )
+    parser.add_argument(
+        "--max_epoch", type=int, default=10, help="Maximum number of epochs"
+    )
     parser.add_argument(
         "--dataset_names",
         type=str,
         help="Name of dataset(s)",
-        default="/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
+        default="/TimeseriesDatasets/forecasting/monash/m3_monthly_dataset.tsf",
     )
 
     parser.add_argument(
         "--random_seed", type=int, default=13, help="Random seed for reproducibility"
     )
-
+    parser.add_argument(
+        "--forecast_horizon", type=int, default=24, help="Forecast horizon"
+    )
+    parser.add_argument(
+        "--n_channels", type=int, default=1, help="Number of channels"
+    )
+    parser.add_argument(
+        "--d_model", type=int, default=16, help="Model dimension"
+    )
+    parser.add_argument(
+        "--d_ff", type=int, default=16, help="Model dimension"
+    )
+    
     args = parser.parse_args()
 
-    imputation(
+    forecasting(
         config_path=args.config,
         gpu_id=args.gpu_id,
         train_batch_size=args.train_batch_size,
         val_batch_size=args.val_batch_size,
+        finetuning_mode=args.finetuning_mode,
         init_lr=args.init_lr,
-        n_channels=args.n_channels,
-        d_model=args.d_model,
-        d_ff=args.d_ff,
+        max_epoch=args.max_epoch,
         dataset_names=args.dataset_names,
         random_seed=args.random_seed,
+        forecast_horizon=args.forecast_horizon,
+        n_channels=args.n_channels,
+        d_ff=args.d_ff,
+        d_model=args.d_model,
     )

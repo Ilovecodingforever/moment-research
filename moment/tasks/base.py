@@ -34,13 +34,29 @@ class Tasks(nn.Module):
         self.args = args
         self._dataloader = {}
 
-        self._build_model()
+        print(args)
+        
+        if args.task_name == "classification":
+            assert isinstance(args.dataset_names, str), "Please provide only one dataset"
+
         self._acquire_device()
 
         # Setup data loaders
         self.train_dataloader = self._get_dataloader(data_split="train")
         self.test_dataloader = self._get_dataloader(data_split="test")
         self.val_dataloader = self._get_dataloader(data_split="val")
+         
+        if args.task_name == "classification":
+            import numpy as np
+            setattr(self.args, "num_class", len(np.unique(self.train_dataloader.dataset.train_labels)))
+            setattr(self.args, "n_channels", self.train_dataloader.dataset.n_channels)
+            print("num_class", self.args.num_class)
+            print("n_channels", self.args.n_channels)
+            
+            
+        self._build_model()
+        
+        
 
     def _build_model(self):
         if self.args.model_name == "MOMENT":
@@ -269,6 +285,15 @@ class Tasks(nn.Module):
                 self.args.finetuning_mode,
             )
         elif experiment_name == "supervised_imputation":
+            results_path = os.path.join(
+                PATHS.RESULTS_DIR,
+                experiment_name,
+                self.args.model_name,
+                self.dataset_name_,
+                self.args.finetuning_mode,
+            )
+
+        elif experiment_name == "supervised_classification":
             results_path = os.path.join(
                 PATHS.RESULTS_DIR,
                 experiment_name,

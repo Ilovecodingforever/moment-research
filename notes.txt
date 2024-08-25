@@ -1,0 +1,46 @@
+TODOs:
+1. delete all ../../ ? especially for saving files
+2. moment prompt experiments: To evaluate the models’ ability to interpolate missing values, we randomly mask contiguous sub-sequences of
+length 8. Instead of masking contiguous sub-sequences, previous studies (Wu et al., 2023; Zhou et al., 2023) mask individual time points,
+making the imputation task much easier.
+3. check dataloader dimensions, padding dimensions
+4. shuffle classification datasets: training data doesn't contain all labels: data/Timeseries-PILE/classification/UCR/ArticularyWordRecognition/ArticularyWordRecognition_TEST.ts
+5. add classification head for moment
+    - you have to trian anyways it to use prompts
+    - so why not add classification head, instead of training then use embeddings
+
+
+
+
+
+
+
+
+long forecast: 
+llm: gpu4ts
+    - reproduce/baselines/gpt4ts_long_horizon_forecasting.sh
+deep: timesnet
+    - reproduce/baselines/timesnet_long_horizon_forecasting.sh
+
+
+
+imputation:
+llm: gpu4ts
+    - reproduce/baselines/gpt4ts_imputation.sh
+deep: timesnet
+    - reproduce/baselines/timesnet_imputation.sh
+stats: Naive, Linear, Nearest, Cubic 
+    - scripts/zero_shot/statistical_imputation_patches_MAR.py 
+
+
+
+classify:
+llm: gpu4ts
+    - reproduce/baselines/gpt4ts_classification.sh
+    - add classification head, train on labels
+deep: timesnet
+    - reproduce/baselines/timesnet_classification.sh
+    - trained on labels
+stats: DTW
+    - scripts/zero_shot/unsupervised_classification_dtw.py
+

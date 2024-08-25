@@ -9,14 +9,16 @@ export PYTHONPATH="/Users/crl/Library/CloudStorage/Box-Box/research/Auton/LLM/mo
 # TODO
 export WANDB_MODE="offline"
 
-python3 scripts/baselines/timesnet_imputation.py\
- --config 'configs/imputation/timesnet_train.yaml'\
+python3 scripts/baselines/timesnet_classification.py\
+ --config 'configs/classification/timesnet.yaml'\
  --gpu_id 2\
  --d_model 64\
  --d_ff 64\
- --n_channels 7\
- --dataset_names 'data/Timeseries-PILE/forecasting/autoformer/national_illness.csv'\
- --random_seed 0\
+ --random_seed 0
+
+ 
+#  --n_channels 7\
+#  --dataset_names 'data/Timeseries-PILE/forecasting/autoformer/national_illness.csv'\
 
 
 

@@ -38,7 +38,7 @@ def forward_backward_fill(y):
 
 def run_experiment(
     config_path: str = "../../configs/imputation/zero_shot.yaml",
-    default_config_path: str = "../../configs/default.yaml",
+    default_config_path: str = "configs/default.yaml",
 ):
     config = Config(
         config_file_path=config_path, default_config_file_path=default_config_path
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config_path", type=str, default="../../configs/imputation/zero_shot.yaml"
+        "--config_path", type=str, default="configs/imputation/zero_shot.yaml"
     )
 
     args = parser.parse_args()

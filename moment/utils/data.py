@@ -41,10 +41,19 @@ def upsample_timeseries(
     if sampling_type == "interpolate":
         timeseries = interpolate_timeseries(timeseries, seq_len)
     elif sampling_type == "pad" and direction == "forward":
-        timeseries = np.pad(timeseries, (0, seq_len - timeseries_len), **kwargs)
+        dim = (0, seq_len - timeseries_len)
+        if len(timeseries.shape) == 2:
+            dim = (dim, (0, 0))
+        
+        timeseries = np.pad(timeseries, dim, **kwargs)
+        
         input_mask[: seq_len - timeseries_len] = 0
     elif sampling_type == "pad" and direction == "backward":
-        timeseries = np.pad(timeseries, (seq_len - timeseries_len, 0), **kwargs)
+        dim = (seq_len - timeseries_len, 0)
+        if len(timeseries.shape) == 2:
+            dim = (dim, (0, 0))        
+        
+        timeseries = np.pad(timeseries, dim, **kwargs)
         input_mask[: seq_len - timeseries_len] = 0
     else:
         error_msg = "Direction must be one of 'forward' or 'backward'"

@@ -11,13 +11,17 @@ from moment.utils.forecasting_metrics import get_forecasting_metrics
 from moment.utils.masking import Masking
 from moment.utils.utils import parse_config
 
+# imputation_datasets = [
+#     "/TimeseriesDatasets/forecasting/autoformer/ETTm1.csv",
+#     "/TimeseriesDatasets/forecasting/autoformer/ETTm2.csv",
+#     "/TimeseriesDatasets/forecasting/autoformer/ETTh1.csv",
+#     "/TimeseriesDatasets/forecasting/autoformer/ETTh2.csv",
+#     "/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
+#     "/TimeseriesDatasets/forecasting/autoformer/weather.csv",
+# ]
+
 imputation_datasets = [
-    "/TimeseriesDatasets/forecasting/autoformer/ETTm1.csv",
-    "/TimeseriesDatasets/forecasting/autoformer/ETTm2.csv",
-    "/TimeseriesDatasets/forecasting/autoformer/ETTh1.csv",
-    "/TimeseriesDatasets/forecasting/autoformer/ETTh2.csv",
-    "/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
-    "/TimeseriesDatasets/forecasting/autoformer/weather.csv",
+    "data/Timeseries-PILE/forecasting/autoformer/national_illness.csv"
 ]
 
 mask_ratios = [0.125, 0.25, 0.375, 0.5]
@@ -39,7 +43,7 @@ def forward_backward_fill(y):
 
 def run_experiment(
     config_path: str = "../../configs/imputation/zero_shot.yaml",
-    default_config_path: str = "../../configs/default.yaml",
+    default_config_path: str = "configs/default.yaml",
 ):
     config = Config(
         config_file_path=config_path, default_config_file_path=default_config_path
@@ -139,7 +143,7 @@ def run_experiment(
         ],
     )
     results.to_csv(
-        "../../assets/results/zero_shot/statistical_imputation_results_512_patches_MAR.csv",
+        "results/moment_results/zero_shot/statistical_imputation_results_512_patches_MAR.csv",
         index=False,
     )
 
@@ -148,7 +152,7 @@ if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config_path", type=str, default="../../configs/imputation/zero_shot.yaml"
+        "--config_path", type=str, default="configs/imputation/zero_shot.yaml"
     )
 
     args = parser.parse_args()

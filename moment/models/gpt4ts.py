@@ -109,9 +109,29 @@ class GPT4TS(nn.Module):
             self.mask_generator = Masking(mask_ratio=configs.mask_ratio)
             self.out_layer = nn.Linear(self.d_ff, self.c_out, bias=True)
         elif self.task_name == TASKS.CLASSIFICATION:
-            raise NotImplementedError
+            # raise NotImplementedError
+            
+            import torch.nn.functional as F
+
+            self.act = F.gelu
+            self.dropout = nn.Dropout(configs.dropout)
+            self.projection = nn.Linear(
+                self.d_model * configs.seq_len, configs.num_class
+            )
+
+
+
         else:
             raise ValueError(f"Unknown task name: {self.task_name}")
+
+
+
+
+
+
+
+
+
 
     def forecast(self, x_enc, **kwargs):
         """
@@ -293,8 +313,33 @@ class GPT4TS(nn.Module):
             metadata={"anomaly_criterion": anomaly_criterion},
         )
 
-    def classification(self):
-        raise NotImplementedError
+    # def classification(self):
+    #     raise NotImplementedError
+    
+    
+    
+    
+
+    def classification(self, x_enc, **kwargs):
+        # embedding
+        enc_out = self.enc_embedding(x_enc, None)  # [B,T,C]
+        enc_out = torch.nn.functional.pad(enc_out, (0, 768 - enc_out.shape[-1]))
+
+        # Output
+        # the output transformer encoder/decoder embeddings don't include non-linearity
+        output = self.act(enc_out)
+        output = self.dropout(output)
+
+        # (batch_size, seq_length * d_model)
+        output = output.reshape(output.shape[0], -1)
+        output = self.projection(output)  # (batch_size, num_classes)
+
+        return output
+
+
+
+
+    
 
     def forward(
         self,

@@ -20,13 +20,14 @@ def imputation(
     init_lr: Optional[float] = None,
     n_channels: int = 7,
     dataset_names: str = "/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
+    random_seed: int = 13,
 ) -> None:
     config = Config(
         config_file_path=config_path, default_config_file_path=default_config_path
     ).parse()
 
     # Control randomness
-    control_randomness(config["random_seed"])
+    control_randomness(random_seed)
 
     # Set-up parameters and defaults
     config["device"] = gpu_id if torch.cuda.is_available() else "cpu"
@@ -77,6 +78,10 @@ if __name__ == "__main__":
         help="Name of dataset(s)",
         default="/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
     )
+    
+    parser.add_argument(
+        "--random_seed", type=int, default=13, help="Random seed for reproducibility"
+    )
 
     args = parser.parse_args()
 
@@ -88,4 +93,5 @@ if __name__ == "__main__":
         init_lr=args.init_lr,
         n_channels=args.n_channels,
         dataset_names=args.dataset_names,
+        random_seed=args.random_seed,
     )
