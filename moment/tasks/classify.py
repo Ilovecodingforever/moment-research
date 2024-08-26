@@ -12,6 +12,9 @@ from moment.utils.utils import dtype_map, make_dir_if_not_exists
 
 from .base import Tasks
 
+import wandb
+
+
 warnings.filterwarnings("ignore")
 
 
@@ -189,7 +192,44 @@ class Classification(Tasks):
                 best_validation_loss = eval_metrics.val_loss
                 self.save_model_and_alert(opt_steps=None)
 
+
+                classification_metrics = self.compute_classification_metrics(
+                    opt_steps=opt_steps
+                )
+                metrics_table = wandb.Table(
+                    columns=classification_metrics.T.columns.tolist(),
+                    data=classification_metrics.T.values.tolist(),
+                )
+                self.logger.log({"classification_metrics": metrics_table})
+                self.save_results(classification_metrics, self.results_dir, opt_steps)
+
         return self.model
+    
+    
+
+    def compute_classification_metrics(self, opt_steps: int):
+        _, _, (trues, preds) = self.validation(
+            self.test_dataloader, return_preds=True
+        )
+
+        acc = (trues == preds.argmax(1)).mean()
+        
+        return pd.DataFrame(
+            data=[
+                self.run_name,
+                self.logger.id,
+                opt_steps,
+                acc,
+            ],
+            index=[
+                "Model name",
+                "ID",
+                "Opt. steps",
+                "ACC",
+            ],
+        )
+
+
 
     def evaluate_and_log(self):
         eval_metrics = self.evaluate_model()

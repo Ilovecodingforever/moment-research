@@ -67,7 +67,7 @@ def imputation(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", type=str, default="configs/default.yaml", help="Path to config file"
+        "--config", type=str, default="configs/imputation/timesnet_train.yaml", help="Path to config file"
     )
     parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
     parser.add_argument(
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         "--dataset_names",
         type=str,
         help="Name of dataset(s)",
-        default="/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
+        default="data/Timeseries-PILE/forecasting/autoformer/national_illness.csv",
     )
 
     parser.add_argument(

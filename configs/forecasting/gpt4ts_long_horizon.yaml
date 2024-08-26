@@ -50,3 +50,4 @@ torch_dtype: "float16"
 output_type: 'multivariate' # 'multivariate' 
 
 freeze_transformer_backbone: True # TODO: what is this?
+scale : True  # should scale, like imputation

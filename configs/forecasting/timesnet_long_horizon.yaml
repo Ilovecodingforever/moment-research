@@ -48,3 +48,7 @@ forecast_horizon: 0
 
 torch_dtype: "float16"
 output_type: 'multivariate' # 'multivariate' 
+scale : True  # should scale, like imputation
+loss_type: "mse" # MSE by default
+
+

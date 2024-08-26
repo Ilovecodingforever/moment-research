@@ -110,21 +110,27 @@ class GPT4TS(nn.Module):
             self.out_layer = nn.Linear(self.d_ff, self.c_out, bias=True)
         elif self.task_name == TASKS.CLASSIFICATION:
             # raise NotImplementedError
-            
+
+            # timesnet classification head
+            # import torch.nn.functional as F
+            # self.act = F.gelu
+            # self.dropout = nn.Dropout(configs.dropout)
+            # self.projection = nn.Linear(
+            #     self.d_model * configs.seq_len, configs.num_class
+            # )
+
+            # moment classification head
+            # self.dropout = nn.Dropout(0.1)
+            # self.linear = nn.Linear(self.d_model, configs.num_class)
+
+            # original gpt4ts repo
             import torch.nn.functional as F
-
             self.act = F.gelu
-            self.dropout = nn.Dropout(configs.dropout)
-            self.projection = nn.Linear(
-                self.d_model * configs.seq_len, configs.num_class
-            )
-
-
+            self.ln_proj = nn.LayerNorm(self.d_model * self.seq_len)
+            self.out_layer = nn.Linear(self.d_model * self.seq_len, configs.num_class)
 
         else:
             raise ValueError(f"Unknown task name: {self.task_name}")
-
-
 
 
 
@@ -315,31 +321,45 @@ class GPT4TS(nn.Module):
 
     # def classification(self):
     #     raise NotImplementedError
-    
-    
-    
-    
+
+
+
+
 
     def classification(self, x_enc, **kwargs):
         # embedding
         enc_out = self.enc_embedding(x_enc, None)  # [B,T,C]
+        # TODO: this line is not in the original gpt4ts repo
         enc_out = torch.nn.functional.pad(enc_out, (0, 768 - enc_out.shape[-1]))
 
         # Output
         # the output transformer encoder/decoder embeddings don't include non-linearity
-        output = self.act(enc_out)
-        output = self.dropout(output)
+        # output = self.act(enc_out)
+        # output = self.dropout(output)
+        # # (batch_size, seq_length * d_model)
+        # output = output.reshape(output.shape[0], -1)
+        # output = self.projection(output)  # (batch_size, num_classes)
 
-        # (batch_size, seq_length * d_model)
-        output = output.reshape(output.shape[0], -1)
-        output = self.projection(output)  # (batch_size, num_classes)
+        # x = torch.mean(enc_out, dim=1)
+        # x = self.dropout(x)
+        # output = self.linear(x)
+
+
+        # original gpt4ts repo
+        output = self.gpt2(inputs_embeds=enc_out).last_hidden_state
+
+        B, L, M = x_enc.shape
+        output = self.act(output).reshape(B, -1)
+        output = self.ln_proj(output)
+        output = self.out_layer(output)
+
 
         return output
 
 
 
 
-    
+
 
     def forward(
         self,

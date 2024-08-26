@@ -122,8 +122,8 @@ class ClassificationDataset(TaskDataset):
         test_ratio : float
             Ratio of the test set.
         output_type : str
-            The type of the output. One of 'univariate' 
-            or 'multivariate'. If multivariate, either the 
+            The type of the output. One of 'univariate'
+            or 'multivariate'. If multivariate, either the
             target column must be specified or the dataset
             is flattened along the channel dimension.
         """
@@ -232,6 +232,17 @@ class ClassificationDataset(TaskDataset):
             path = os.path.join("/".join(root_path), self.series + "_TEST.ts")
 
         self.data, self.labels = load_from_tsfile(path)
+
+
+        # TODO: shuffle the data?
+        idx = np.random.permutation(len(self.data))
+
+        self.data = self.data[idx]
+        self.labels = self.labels[idx]
+
+
+
+
         _, self.labels = self._transform_labels(train_labels, self.labels)
 
         # Check if time-series have equal lengths. If not, left pad with zeros
@@ -302,8 +313,8 @@ class ClassificationDataset(TaskDataset):
             timeseries, input_mask = downsample_timeseries(
                 timeseries, self.seq_len, sampling_type=self.downsampling_type
             )
-            
-        
+
+
         # univariate
         if len(timeseries.shape) == 1:
             timeseries = np.expand_dims(timeseries, axis=0)

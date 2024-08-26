@@ -89,7 +89,7 @@ def forecasting(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", type=str, default="configs/default.yaml", help="Path to config file"
+        "--config", type=str, default="configs/forecasting/timesnet_long_horizon.yaml", help="Path to config file"
     )
     parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
     parser.add_argument(
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         "--dataset_names",
         type=str,
         help="Name of dataset(s)",
-        default="/TimeseriesDatasets/forecasting/monash/m3_monthly_dataset.tsf",
+        default="data/Timeseries-PILE/forecasting/autoformer/national_illness.csv",
     )
 
     parser.add_argument(
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         "--forecast_horizon", type=int, default=24, help="Forecast horizon"
     )
     parser.add_argument(
-        "--n_channels", type=int, default=1, help="Number of channels"
+        "--n_channels", type=int, default=7, help="Number of channels"
     )
     parser.add_argument(
         "--d_model", type=int, default=16, help="Model dimension"

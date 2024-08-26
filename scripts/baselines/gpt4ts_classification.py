@@ -62,9 +62,7 @@ def run_experiment(
         config_file_path=config_path, default_config_file_path=DEFAULT_CONFIG_PATH
     ).parse()
 
-    config["device"] = (
-        torch.device("cuda:{}".format(gpu_id)) if torch.cuda.is_available() else "cpu"
-    )
+    config["device"] = gpu_id if torch.cuda.is_available() else "cpu"
 
 
 
@@ -127,7 +125,7 @@ if __name__ == "__main__":
         type=str,
         default="configs/classification/gpt4ts.yaml",
     )
-    parser.add_argument("--gpu_id", type=str, default="0")
+    parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
 
 
     parser.add_argument(

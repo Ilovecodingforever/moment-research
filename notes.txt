@@ -8,8 +8,7 @@ making the imputation task much easier.
 5. add classification head for moment
     - you have to trian anyways it to use prompts
     - so why not add classification head, instead of training then use embeddings
-
-
+6. add experiments for mask ratio
 
 
 
@@ -19,18 +18,55 @@ making the imputation task much easier.
 long forecast: 
 llm: gpu4ts
     - reproduce/baselines/gpt4ts_long_horizon_forecasting.sh
+
+wandb: Run summary:
+wandb:   learning_rate 0.0
+wandb: step_train_loss 1.48487
+wandb:       test_loss 3.70083
+wandb: validation_loss 1.01689
+
+
+
 deep: timesnet
     - reproduce/baselines/timesnet_long_horizon_forecasting.sh
+
+wandb: Run summary:
+wandb:   learning_rate 0.0
+wandb: step_train_loss 0.49094
+wandb:       test_loss 2.08835
+wandb: validation_loss 0.48555
+
+
 
 
 
 imputation:
 llm: gpu4ts
     - reproduce/baselines/gpt4ts_imputation.sh
+
+wandb: Run summary:
+wandb:   learning_rate 0.0
+wandb: step_train_loss 0.48346
+wandb: validation_loss 0.35828
+
+
 deep: timesnet
     - reproduce/baselines/timesnet_imputation.sh
+
+wandb: Run summary:
+wandb:   learning_rate 0.0
+wandb: step_train_loss 0.75323
+wandb: validation_loss 0.54084
+
+
+
 stats: Naive, Linear, Nearest, Cubic 
     - scripts/zero_shot/statistical_imputation_patches_MAR.py 
+
+
+results/moment_results/zero_shot/statistical_imputation_results_512_patches_MAR.csv
+
+
 
 
 
@@ -38,9 +74,19 @@ classify:
 llm: gpu4ts
     - reproduce/baselines/gpt4ts_classification.sh
     - add classification head, train on labels
+
+
+losses below 2
+
+
+
 deep: timesnet
     - reproduce/baselines/timesnet_classification.sh
     - trained on labels
+
+losses below 2
+
+
 stats: DTW
     - scripts/zero_shot/unsupervised_classification_dtw.py
 
