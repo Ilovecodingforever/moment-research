@@ -1,6 +1,11 @@
 import argparse
 from typing import Optional
 
+
+import sys
+sys.path.append("/home/scratch/mingzhul/moment-research")
+
+
 import torch
 
 from moment.common import PATHS

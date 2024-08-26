@@ -3,6 +3,10 @@ from typing import Optional
 
 import torch
 
+import sys
+sys.path.append("/home/scratch/mingzhul/moment-research")
+
+
 from moment.common import PATHS
 from moment.tasks.forecast_finetune import ForecastFinetuning
 from moment.utils.config import Config
@@ -62,7 +66,7 @@ def forecast(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", type=str, default="configs/default.yaml", help="Path to config file"
+        "--config", type=str, default="configs/forecasting/gpt4ts_long_horizon.yaml", help="Path to config file"
     )
     parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
     parser.add_argument(
@@ -79,7 +83,7 @@ if __name__ == "__main__":
         "--dataset_names",
         type=str,
         help="Name of dataset(s)",
-        default="/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
+        default="data/Timeseries-PILE/forecasting/autoformer/national_illness.csv",
     )
 
     parser.add_argument(

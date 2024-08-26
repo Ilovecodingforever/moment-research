@@ -3,6 +3,11 @@ from typing import Optional
 
 import torch
 
+
+import sys
+sys.path.append("/home/scratch/mingzhul/moment-research")
+
+
 from moment.common import PATHS
 from moment.tasks.forecast_finetune import ForecastFinetuning
 from moment.utils.config import Config

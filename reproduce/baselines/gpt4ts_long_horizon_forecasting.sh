@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # has to do this here not in .env, because dotenv is loaded after importing moment
-export PYTHONPATH="/Users/crl/Library/CloudStorage/Box-Box/research/Auton/LLM/moment-research/"
+export PYTHONPATH="/home/scratch/mingzhul/moment-research"
 
 # TODO
 export WANDB_MODE="offline"

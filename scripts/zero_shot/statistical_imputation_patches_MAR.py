@@ -5,6 +5,12 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
+
+import sys
+sys.path.append("/home/scratch/mingzhul/moment-research")
+
+
+
 from moment.data.dataloader import get_timeseries_dataloader
 from moment.utils.config import Config
 from moment.utils.forecasting_metrics import get_forecasting_metrics

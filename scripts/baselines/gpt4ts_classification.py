@@ -6,7 +6,7 @@ import pickle as pkl
 
 
 import sys
-sys.path.append("/Users/crl/Library/CloudStorage/Box-Box/research/Auton/LLM/moment-research/")
+sys.path.append("/home/scratch/mingzhul/moment-research")
 
 
 

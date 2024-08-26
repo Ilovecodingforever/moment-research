@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PYTHONPATH="/Users/crl/Library/CloudStorage/Box-Box/research/Auton/LLM/moment-research/"
+export PYTHONPATH="/home/scratch/mingzhul/moment-research"
 
 
 export WANDB_MODE="offline"
