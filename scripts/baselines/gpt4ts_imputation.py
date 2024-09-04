@@ -36,6 +36,10 @@ def imputation(
 
     # Set-up parameters and defaults
     config["device"] = gpu_id if torch.cuda.is_available() else "cpu"
+
+    PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
+
+
     config["checkpoint_path"] = PATHS.CHECKPOINTS_DIR
     args = parse_config(config)
     make_dir_if_not_exists(config["checkpoint_path"])

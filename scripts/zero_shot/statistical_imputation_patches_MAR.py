@@ -7,7 +7,8 @@ from tqdm import tqdm
 
 
 import sys
-sys.path.append("/home/scratch/mingzhul/moment-research")
+sys.path.append("/zfsauton2/home/mingzhul/time-series-prompt/moment-research")
+
 
 
 
@@ -55,6 +56,14 @@ def run_experiment(
         config_file_path=config_path, default_config_file_path=default_config_path
     ).parse()
     # config['device'] = gpu_id if torch.cuda.is_available() else 'cpu'
+    
+    
+    
+    # control_randomness(random_seed)
+    # PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
+
+    
+    
     args = parse_config(config)
 
     args.output_type = "multivariate"

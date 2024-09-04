@@ -50,4 +50,4 @@ d_ff: 128
 torch_dtype: "float16"
 output_type: 'multivariate' # 'multivariate' 
 scale : True 
-
+freeze_transformer_backbone: False

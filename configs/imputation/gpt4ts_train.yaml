@@ -52,6 +52,7 @@ d_ff: 768
     
 torch_dtype: "float16"
 max_epoch: 10
+freeze_transformer_backbone: False
     
     
     

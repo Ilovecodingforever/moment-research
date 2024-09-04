@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PYTHONPATH="/home/scratch/mingzhul/moment-research"
+export PYTHONPATH="/zfsauton2/home/mingzhul/time-series-prompt/moment-research"
 
 
 export WANDB_MODE="offline"

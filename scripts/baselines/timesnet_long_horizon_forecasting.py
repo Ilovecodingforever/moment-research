@@ -56,9 +56,23 @@ def forecasting(
 
     # Set-up parameters and defaults
     config["device"] = gpu_id if torch.cuda.is_available() else "cpu"
+
+
     config["checkpoint_path"] = PATHS.CHECKPOINTS_DIR
+    
+    
+    
+    
+    PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
+    
+    
+    
     args = parse_config(config)
     make_dir_if_not_exists(config["checkpoint_path"])
+    
+
+
+
 
     # Setup arguments
     args.source_dataset = f"{data_collection}_{frequency}"

@@ -9,11 +9,11 @@ export WANDB_MODE="offline"
 
 python3 scripts/baselines/timesnet_long_horizon_forecasting.py\
  --config 'configs/forecasting/timesnet_long_horizon.yaml'\
- --gpu_id 2\
+ --gpu_id 3\
  --d_model 64\
  --d_ff 64\
  --n_channels 7\
  --dataset_names 'data/Timeseries-PILE/forecasting/autoformer/national_illness.csv'\
- --random_seed 0\
- --forecast_horizon 24\
+ --random_seed 4\
+ --forecast_horizon 60\
 

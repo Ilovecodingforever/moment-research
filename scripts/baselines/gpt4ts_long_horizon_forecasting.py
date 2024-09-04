@@ -3,8 +3,8 @@ from typing import Optional
 
 import torch
 
-import sys
-sys.path.append("/home/scratch/mingzhul/moment-research")
+# import sys
+# sys.path.append("/home/scratch/mingzhul/moment-research")
 
 
 from moment.common import PATHS
@@ -37,8 +37,19 @@ def forecast(
     # Set-up parameters and defaults
     config["device"] = gpu_id if torch.cuda.is_available() else "cpu"
     config["checkpoint_path"] = PATHS.CHECKPOINTS_DIR
+    
+    
+    
+    
+    PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
+    
+    
+    
     args = parse_config(config)
     make_dir_if_not_exists(config["checkpoint_path"])
+    
+
+
 
     # Setup arguments
     args.train_batch_size = train_batch_size

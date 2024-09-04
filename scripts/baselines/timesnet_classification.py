@@ -69,6 +69,7 @@ def run_experiment(
 
 
     config["checkpoint_path"] = PATHS.CHECKPOINTS_DIR
+    PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
 
 
 

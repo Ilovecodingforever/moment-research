@@ -176,7 +176,59 @@ class ImputationFinetuning(Tasks):
                 best_validation_loss = eval_metrics.val_loss
                 self.save_model_and_alert(opt_steps=None)
 
+
+                import wandb
+
+                imputation_metrics = self.compute_imputation_metrics(
+                    opt_steps=opt_steps
+                )
+                metrics_table = wandb.Table(
+                    columns=imputation_metrics.T.columns.tolist(),
+                    data=imputation_metrics.T.values.tolist(),
+                )
+                self.logger.log({"imputation_metrics": metrics_table})
+                self.save_results(imputation_metrics, self.results_dir, opt_steps)
+
+
+
         return self.model
+
+
+
+    def compute_imputation_metrics(self, opt_steps: int):
+        _, _, (trues, preds, ) = self.validation(
+            self.test_dataloader, return_preds=True
+        )
+
+        from moment.utils.forecasting_metrics import get_forecasting_metrics
+        metrics = get_forecasting_metrics(y=trues, y_hat=preds, reduction="mean")
+
+        return pd.DataFrame(
+            data=[
+                self.run_name,
+                self.logger.id,
+                opt_steps,
+                metrics.mae,
+                metrics.mse,
+                metrics.mape,
+                metrics.smape,
+                metrics.rmse,
+            ],
+            index=[
+                "Model name",
+                "ID",
+                "Opt. steps",
+                "MAE",
+                "MSE",
+                "MAPE",
+                "sMAPE",
+                "RMSE",
+            ],
+        )
+
+
+
+
 
     def evaluate_and_log(self):
         eval_metrics = self.evaluate_model()

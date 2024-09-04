@@ -4,7 +4,7 @@
 
 
 # has to do this here not in .env, because dotenv is loaded after importing moment
-export PYTHONPATH="/home/scratch/mingzhul/moment-research"
+export PYTHONPATH="/zfsauton2/home/mingzhul/time-series-prompt/moment-research"
 
 # TODO
 export WANDB_MODE="offline"
@@ -14,7 +14,7 @@ python3 scripts/baselines/timesnet_classification.py\
  --gpu_id 2\
  --d_model 64\
  --d_ff 64\
- --random_seed 0
+ --random_seed 4\
 
  
 #  --n_channels 7\

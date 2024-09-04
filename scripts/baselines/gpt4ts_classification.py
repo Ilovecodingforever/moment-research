@@ -6,7 +6,7 @@ import pickle as pkl
 
 
 import sys
-sys.path.append("/home/scratch/mingzhul/moment-research")
+sys.path.append("/zfsauton2/home/mingzhul/time-series-prompt/moment-research")
 
 
 
@@ -68,6 +68,7 @@ def run_experiment(
 
     config["checkpoint_path"] = PATHS.CHECKPOINTS_DIR
 
+    PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
 
 
 

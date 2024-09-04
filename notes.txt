@@ -1,16 +1,23 @@
 TODOs:
-1. delete all ../../ ? especially for saving files
-2. moment prompt experiments: To evaluate the models’ ability to interpolate missing values, we randomly mask contiguous sub-sequences of
-length 8. Instead of masking contiguous sub-sequences, previous studies (Wu et al., 2023; Zhou et al., 2023) mask individual time points,
-making the imputation task much easier.
+7. change moment batchsize to match baselines
+10. finetune + prompt
+
+
+
+done:
 3. check dataloader dimensions, padding dimensions
 4. shuffle classification datasets: training data doesn't contain all labels: data/Timeseries-PILE/classification/UCR/ArticularyWordRecognition/ArticularyWordRecognition_TEST.ts
+9. like gpt4ts, should I not freeze wte??
+    - do this for lora modules_to_save?
 5. add classification head for moment
     - you have to trian anyways it to use prompts
     - so why not add classification head, instead of training then use embeddings
+2. moment prompt experiments: To evaluate the models’ ability to interpolate missing values, we randomly mask contiguous sub-sequences of
+length 8. Instead of masking contiguous sub-sequences, previous studies (Wu et al., 2023; Zhou et al., 2023) mask individual time points,
+making the imputation task much easier.
+    - is the same mask applied for all channels?
 6. add experiments for mask ratio
-
-
+8. baseline experiment with all horizons
 
 
 

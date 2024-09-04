@@ -4,14 +4,14 @@
 
 
 # has to do this here not in .env, because dotenv is loaded after importing moment
-export PYTHONPATH="/home/scratch/mingzhul/moment-research"
+export PYTHONPATH="/zfsauton2/home/mingzhul/time-series-prompt/moment-research"
 
 # TODO
 export WANDB_MODE="offline"
 
 python3 scripts/baselines/timesnet_imputation.py\
  --config 'configs/imputation/timesnet_train.yaml'\
- --gpu_id 2\
+ --gpu_id 7\
  --d_model 64\
  --d_ff 64\
  --n_channels 7\
