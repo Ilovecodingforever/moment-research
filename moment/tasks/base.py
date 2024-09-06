@@ -25,6 +25,10 @@ from moment.utils.forecasting_metrics import sMAPELoss
 from moment.utils.optims import LinearWarmupCosineLRScheduler
 from moment.utils.utils import MetricsStore
 
+
+from moment.models.gpt4ts_prompt import GPT4TS_prompt
+
+
 warnings.filterwarnings("ignore")
 
 
@@ -35,7 +39,7 @@ class Tasks(nn.Module):
         self._dataloader = {}
 
         print(args)
-        
+
         if args.task_name == "classification":
             assert isinstance(args.dataset_names, str), "Please provide only one dataset"
 
@@ -45,18 +49,18 @@ class Tasks(nn.Module):
         self.train_dataloader = self._get_dataloader(data_split="train")
         self.test_dataloader = self._get_dataloader(data_split="test")
         self.val_dataloader = self._get_dataloader(data_split="val")
-         
+
         if args.task_name == "classification":
             import numpy as np
             setattr(self.args, "num_class", len(np.unique(self.train_dataloader.dataset.train_labels)))
             setattr(self.args, "n_channels", self.train_dataloader.dataset.n_channels)
             print("num_class", self.args.num_class)
             print("n_channels", self.args.n_channels)
-            
-            
+
+
         self._build_model()
-        
-        
+
+
 
     def _build_model(self):
         if self.args.model_name == "MOMENT":
@@ -77,8 +81,30 @@ class Tasks(nn.Module):
             self.model = GPT4TS(configs=self.args)
         elif self.args.model_name == "TimesNet":
             self.model = TimesNet(configs=self.args)
+        elif self.args.model_name == "GPT4TS_prompt":
+            self.model = GPT4TS_prompt(configs=self.args)
         else:
             raise NotImplementedError(f"Model {self.args.model_name} not implemented")
+
+        if self.args.lora:
+            from peft import LoraConfig, get_peft_model
+
+            config = LoraConfig(
+                r=16,
+                lora_alpha=16,
+                # target_modules=["q", "v"],
+                lora_dropout=0.1,
+                bias="none",
+                modules_to_save=["wte", "enc_embedding", "ln", "predict_linear", "out_layer"],
+            )
+            self.model.gpt2 = get_peft_model(self.model.gpt2, config)
+            
+        
+        # print trainable params
+        trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        print(f"Trainable parameters: {trainable_params}")
+
+
         return self.model
 
     def _acquire_device(self):

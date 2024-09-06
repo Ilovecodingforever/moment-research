@@ -33,6 +33,7 @@ class PositionalEmbedding(nn.Module):
             self.model_name == "MOMENT"
             or self.model_name == "TimesNet"
             or self.model_name == "GPT4TS"
+            or self.model_name == "GPT4TS_prompt"
         ):
             return self.pe[:, : x.size(2)]
         else:

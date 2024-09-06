@@ -10,7 +10,7 @@ import torch.nn as nn
 from einops import rearrange
 from torch import optim
 from transformers.models.gpt2.configuration_gpt2 import GPT2Config
-from transformers.models.gpt2.modeling_gpt2 import GPT2Model
+from moment.models.gpt2_prompt import GPT2Model_prompt
 
 from moment.common import TASKS
 from moment.models.layers.embed import DataEmbedding
@@ -30,9 +30,9 @@ class GPT4TSOutputs:
     metadata: dict = None
 
 
-class GPT4TS(nn.Module):
-    def __init__(self, configs):
-        super(GPT4TS, self).__init__()
+class GPT4TS_prompt(nn.Module):
+    def __init__(self, configs, reduction='mean'):
+        super(GPT4TS_prompt, self).__init__()
         self.configs = configs
         self.task_name = configs.task_name
         self.patch_size = configs.patch_len
@@ -44,7 +44,7 @@ class GPT4TS(nn.Module):
 
         self.transformer_backbone = configs.transformer_backbone
         self.randomly_initialize_backbone = configs.randomly_initialize_backbone
-        self.freeze_transformer_backbone = configs.freeze_transformer_backbone
+        self.freeze_transformer_backbone = True
         self.stride = configs.patch_stride_len
         self.enable_gradient_checkpointing = configs.enable_gradient_checkpointing
 
@@ -59,7 +59,8 @@ class GPT4TS(nn.Module):
         self.d_model = GPT2Config.from_pretrained(self.transformer_backbone).n_embd
 
         self.enc_embedding = DataEmbedding(
-            c_in=self.enc_in,
+            # c_in=self.enc_in,
+            c_in=1,
             d_model=self.d_model,
             dropout=configs.dropout,
             model_name=self.configs.model_name,
@@ -70,13 +71,20 @@ class GPT4TS(nn.Module):
             model_config = GPT2Config.from_pretrained(
                 self.transformer_backbone
             )  # Different from fpt.py
-            self.gpt2 = GPT2Model(model_config)
+            self.gpt2 = GPT2Model_prompt(model_config,
+                                         patch_num=self.patch_num-1,
+                                         c_in=self.enc_in,
+                                         num_prefix=configs.num_prefix,
+                                         )
             print(f"Initializing randomly initialized GPT-2.")
         else:
-            self.gpt2 = GPT2Model.from_pretrained(
+            self.gpt2 = GPT2Model_prompt.from_pretrained(
                 self.transformer_backbone,
                 output_attentions=True,
                 output_hidden_states=True,
+                patch_num=self.patch_num-1,
+                c_in=self.enc_in,
+                num_prefix=configs.num_prefix,                
             )
             print(f"Initializing pre-trained GPT-2.")
 
@@ -84,12 +92,19 @@ class GPT4TS(nn.Module):
             self.gpt2.gradient_checkpointing_enable()
             print("Enabling gradient checkpointing.")
 
+
+
+        self.gpt2.c_in = self.enc_in
+        self.c_out = 1
+
+
+
         self.gpt2.h = self.gpt2.h[: configs.gpt_layers]
         print("GPT-2 = {}".format(self.gpt2))
 
         if self.freeze_transformer_backbone and not self.randomly_initialize_backbone:
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
-                if "ln" in name or "wpe" in name:
+                if "ln" in name or "wpe" in name or "prompt" in name:
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
@@ -126,13 +141,18 @@ class GPT4TS(nn.Module):
             # original gpt4ts repo
             import torch.nn.functional as F
             self.act = F.gelu
-            self.ln_proj = nn.LayerNorm(self.d_model * self.seq_len)
-            self.out_layer = nn.Linear(self.d_model * self.seq_len, configs.num_class)
+            
+            if reduction == "mean":
+                self.out_layer = nn.Linear(self.d_model * self.seq_len, configs.num_class)
+                self.ln_proj = nn.LayerNorm(self.d_model * self.seq_len)
+            elif reduction == "concat":
+                self.out_layer = nn.Linear(self.d_model * self.seq_len * self.enc_in, configs.num_class)
+                self.ln_proj = nn.LayerNorm(self.d_model * self.seq_len * self.enc_in)
 
         else:
             raise ValueError(f"Unknown task name: {self.task_name}")
 
-
+        pass
 
 
 
@@ -152,6 +172,14 @@ class GPT4TS(nn.Module):
 
         This implementation is based on (2).
         """
+
+        B, L, M = x_enc.shape
+        # channel independent
+        x_enc = x_enc.reshape(
+            (-1, 1, x_enc.shape[-1])
+        )
+        
+        
 
         # Normalization from Non-stationary Transformer
         means = x_enc.mean(2, keepdim=True).detach()
@@ -190,7 +218,7 @@ class GPT4TS(nn.Module):
         forecast = dec_out[:, :, -self.pred_len :]
         backcast = dec_out[:, :, : -self.pred_len]
 
-        return GPT4TSOutputs(backcast=backcast, forecast=forecast, timeseries=x_enc)
+        return GPT4TSOutputs(backcast=backcast.reshape(B, L, backcast.shape[-1]), forecast=forecast.reshape(B, L, forecast.shape[-1]), timeseries=x_enc)
 
     def reconstruct(self, x_enc, mask=None, **kwargs):
         """
@@ -326,9 +354,16 @@ class GPT4TS(nn.Module):
 
 
 
-    def classification(self, x_enc, **kwargs):
+    def classification(self, x_enc, reduction='mean',
+                       **kwargs):
+
+        # channel independent
+        x_enc_ = x_enc.reshape(
+            (-1, 1, x_enc.shape[-1])
+        )
+        
         # embedding
-        enc_out = self.enc_embedding(x_enc, None)  # [B,T,C]
+        enc_out = self.enc_embedding(x_enc_, None)  # [B,T,C]
         # TODO: this line is not in the original gpt4ts repo
         enc_out = torch.nn.functional.pad(enc_out, (0, 768 - enc_out.shape[-1]))
 
@@ -349,10 +384,22 @@ class GPT4TS(nn.Module):
         output = self.gpt2(inputs_embeds=enc_out).last_hidden_state
 
         B, L, M = x_enc.shape
+
+        output = output.reshape(B, L, M, -1)
+
+
+        # Mean across channels
+        if reduction == "mean":
+            # [batch_size x n_patches x d_model]
+            output = output.mean(dim=1, keepdim=False)
+        # Concatenate across channels
+        elif reduction == "concat":
+            # [batch_size x n_patches x d_model * n_channels]
+            output = output.permute(0, 2, 3, 1).reshape(B, L, -1)
+
         output = self.act(output).reshape(B, -1)
         output = self.ln_proj(output)
         output = self.out_layer(output)
-
 
         return output
 

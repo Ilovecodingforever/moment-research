@@ -8,7 +8,7 @@ import pickle as pkl
 import sys
 sys.path.append("/zfsauton2/home/mingzhul/time-series-prompt/moment-research")
 
-
+# os.environ["WANDB_MODE"] = "offline"
 
 
 
@@ -103,6 +103,9 @@ def run_experiment(
         args.dataset_names = dataset_name
 
 
+        args.model_name = "GPT4TS_prompt"
+
+
         print(f"Running experiments with config:\n{args}\n")
 
         task_obj = Classification(args=args)
@@ -115,6 +118,10 @@ def run_experiment(
         task_obj.end_logger()
 
 
+# TODO:
+# flatten inputs, channel independence
+
+
 
 if __name__ == "__main__":
     # Parse arguments
@@ -125,17 +132,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="configs/classification/gpt4ts.yaml",
+        default="configs/prompt/gpt4ts_classification.yaml",
     )
     parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
 
 
     parser.add_argument(
         "--random_seed", type=int, default=13, help="Random seed for reproducibility"
-    )
-    
-    parser.add_argument(
-        "--lora", type=str, default=False
     )
 
 

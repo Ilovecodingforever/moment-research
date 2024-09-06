@@ -69,3 +69,9 @@ shuffle : True
 num_workers : 5
 pin_memory : True
 drop_last : False
+
+
+
+
+lora : False
+

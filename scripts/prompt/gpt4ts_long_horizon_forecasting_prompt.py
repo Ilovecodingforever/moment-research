@@ -26,7 +26,7 @@ def forecast(
     dataset_names: str = "/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
     random_seed: int = 13,
     forecast_horizon: int = 24,
-    lora: bool = False
+    num_prefix: int = 16,
 ) -> None:
     config = Config(
         config_file_path=config_path, default_config_file_path=default_config_path
@@ -38,17 +38,17 @@ def forecast(
     # Set-up parameters and defaults
     config["device"] = gpu_id if torch.cuda.is_available() else "cpu"
     config["checkpoint_path"] = PATHS.CHECKPOINTS_DIR
-    
-    
-    
-    
+
+
+
+
     PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
-    
-    
-    
+
+
+
     args = parse_config(config)
     make_dir_if_not_exists(config["checkpoint_path"])
-    
+
 
 
 
@@ -63,7 +63,13 @@ def forecast(
 
     args.forecast_horizon = forecast_horizon
 
-    args.lora = lora
+
+
+
+    args.model_name = "GPT4TS_prompt"
+    args.num_prefix = num_prefix
+
+
 
     print(f"Running experiments with config:\n{args}\n")
 
@@ -80,7 +86,7 @@ def forecast(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", type=str, default="configs/forecasting/gpt4ts_long_horizon.yaml", help="Path to config file"
+        "--config", type=str, default="configs/prompt/gpt4ts_long_horizon.yaml", help="Path to config file"
     )
     parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
     parser.add_argument(
@@ -107,11 +113,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--forecast_horizon", type=int, default=60, help="Forecast horizon"
     )
-    
+
     parser.add_argument(
-        "--lora", type=bool, default=True
+        "--num_prefix", type=int, default=64, help="Forecast horizon"
     )
-    
+
     args = parser.parse_args()
 
     forecast(
@@ -124,5 +130,5 @@ if __name__ == "__main__":
         dataset_names=args.dataset_names,
         random_seed=args.random_seed,
         forecast_horizon=args.forecast_horizon,
-        lora=args.lora,
+        num_prefix=args.num_prefix,
     )
