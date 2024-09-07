@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config", type=str, default="configs/forecasting/gpt4ts_long_horizon.yaml", help="Path to config file"
     )
-    parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
+    parser.add_argument("--gpu_id", type=int, default=1, help="GPU ID to use")
     parser.add_argument(
         "--train_batch_size", type=int, default=4, help="Training batch size"
     )
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--random_seed", type=int, default=13, help="Random seed for reproducibility"
+        "--random_seed", type=int, default=0, help="Random seed for reproducibility"
     )
 
     parser.add_argument(

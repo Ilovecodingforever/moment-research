@@ -55,7 +55,7 @@ class Classification(Tasks):
                 # observed_mask = observed_mask.unsqueeze(1).repeat((1, n_channels, 1))
                 # masked_loss = observed_mask * recon_loss
                 # loss = masked_loss.nansum() / (observed_mask.nansum() + 1e-7)
-                loss = self.criterion(outputs, labels)
+                loss = self.criterion(outputs.logits, labels)
 
                 losses.append(loss.item())
 

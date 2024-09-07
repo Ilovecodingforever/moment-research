@@ -28,6 +28,7 @@ class GPT4TSOutputs:
     pretrain_mask: torch.Tensor = None
     anomaly_scores: torch.Tensor = None
     metadata: dict = None
+    logits: torch.Tensor = None
 
 
 class GPT4TS_prompt(nn.Module):
@@ -88,10 +89,21 @@ class GPT4TS_prompt(nn.Module):
             )
             print(f"Initializing pre-trained GPT-2.")
 
+
+        # TODO: prompt does not work if this turned on
+        #   try turning all graients off except for prompt. you'll see that it doesn't work
+        # if self.enable_gradient_checkpointing:
+        #     self.gpt2.gradient_checkpointing_enable()
+        #     print("Enabling gradient checkpointing.")
+
+        # https://github.com/huggingface/transformers/issues/21381
+        # this seems to be working
         if self.enable_gradient_checkpointing:
+            from functools import partial
+            notfailing_checkpoint = partial(torch.utils.checkpoint.checkpoint, use_reentrant=False)
+            torch.utils.checkpoint.checkpoint = notfailing_checkpoint
             self.gpt2.gradient_checkpointing_enable()
             print("Enabling gradient checkpointing.")
-
 
 
         self.gpt2.c_in = self.enc_in
@@ -104,10 +116,13 @@ class GPT4TS_prompt(nn.Module):
 
         if self.freeze_transformer_backbone and not self.randomly_initialize_backbone:
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
+                # if "ln" in name or "wpe" in name:
                 if "ln" in name or "wpe" in name or "prompt" in name:
+                # if "prompt" in name:
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
+
 
         if (
             self.task_name == TASKS.LONG_HORIZON_FORECASTING
@@ -151,6 +166,20 @@ class GPT4TS_prompt(nn.Module):
 
         else:
             raise ValueError(f"Unknown task name: {self.task_name}")
+
+
+
+
+                    
+        # self.enc_embedding.value_embedding.tokenConv.weight.requires_grad = False
+        # self.out_layer.weight.requires_grad = False
+        # self.out_layer.bias.requires_grad = False
+        # self.ln_proj.weight.requires_grad = False
+        # self.ln_proj.bias.requires_grad = False
+
+
+
+
 
         pass
 
@@ -401,7 +430,7 @@ class GPT4TS_prompt(nn.Module):
         output = self.ln_proj(output)
         output = self.out_layer(output)
 
-        return output
+        return GPT4TSOutputs(logits=output)
 
 
 

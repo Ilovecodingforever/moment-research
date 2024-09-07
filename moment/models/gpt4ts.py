@@ -28,6 +28,7 @@ class GPT4TSOutputs:
     pretrain_mask: torch.Tensor = None
     anomaly_scores: torch.Tensor = None
     metadata: dict = None
+    logits: torch.Tensor = None
 
 
 class GPT4TS(nn.Module):
@@ -354,7 +355,7 @@ class GPT4TS(nn.Module):
         output = self.out_layer(output)
 
 
-        return output
+        return GPT4TSOutputs(logits=output)
 
 
 

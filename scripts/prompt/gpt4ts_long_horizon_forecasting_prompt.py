@@ -88,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config", type=str, default="configs/prompt/gpt4ts_long_horizon.yaml", help="Path to config file"
     )
-    parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
+    parser.add_argument("--gpu_id", type=int, default=2, help="GPU ID to use")
     parser.add_argument(
         "--train_batch_size", type=int, default=4, help="Training batch size"
     )
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--num_prefix", type=int, default=64, help="Forecast horizon"
+        "--num_prefix", type=int, default=32, help="Forecast horizon"
     )
 
     args = parser.parse_args()
