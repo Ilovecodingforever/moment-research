@@ -1,6 +1,10 @@
 import argparse
 from typing import Optional
 
+import sys
+sys.path.append("/zfsauton2/home/mingzhul/time-series-prompt/moment-research")
+
+
 import torch
 
 from moment.common import PATHS
@@ -86,7 +90,7 @@ if __name__ == "__main__":
         "--dataset_names",
         type=str,
         help="Name of dataset(s)",
-        default="/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
+        default="data/Timeseries-PILE/forecasting/autoformer/national_illness.csv",
     )
 
     args = parser.parse_args()

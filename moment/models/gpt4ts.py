@@ -49,6 +49,7 @@ class GPT4TS(nn.Module):
         self.stride = configs.patch_stride_len
         self.enable_gradient_checkpointing = configs.enable_gradient_checkpointing
 
+
         self.patch_num = (
             self.seq_len + self.pred_len - self.patch_size
         ) // self.stride + 1

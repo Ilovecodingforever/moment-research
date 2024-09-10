@@ -79,6 +79,12 @@ class Tasks(nn.Module):
             self.model = NHITS(configs=self.args)
         elif self.args.model_name == "GPT4TS":
             self.model = GPT4TS(configs=self.args)
+
+            if self.args.linear_probing:
+                for n, param in self.model.named_parameters():
+                    if 'predict_linear' not in n and 'out_layer' not in n and "enc_embedding" not in n:
+                        param.requires_grad = False
+
         elif self.args.model_name == "TimesNet":
             self.model = TimesNet(configs=self.args)
         elif self.args.model_name == "GPT4TS_prompt":
@@ -90,20 +96,24 @@ class Tasks(nn.Module):
             from peft import LoraConfig, get_peft_model
 
             config = LoraConfig(
-                r=16,
+                r=1,
                 lora_alpha=16,
                 # target_modules=["q", "v"],
                 lora_dropout=0.1,
                 bias="none",
-                modules_to_save=["wte", "enc_embedding", "ln", "predict_linear", "out_layer"],
+                modules_to_save=["wpe", "enc_embedding", "ln", "predict_linear", "out_layer"],
             )
             self.model.gpt2 = get_peft_model(self.model.gpt2, config)
-            
-        
+
+
         # print trainable params
         trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print(f"Trainable parameters: {trainable_params}")
 
+        # print trinable params
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                print(name)
 
         return self.model
 
@@ -182,7 +192,8 @@ class Tasks(nn.Module):
         elif type == "onecyclelr":
             self.lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer=self.optimizer,
-                max_lr=self.args.init_lr,
+                # max_lr=self.args.init_lr,
+                max_lr=self.args.max_lr,
                 epochs=self.args.max_epoch,
                 steps_per_epoch=len(self.train_dataloader),
                 pct_start=self.args.pct_start,

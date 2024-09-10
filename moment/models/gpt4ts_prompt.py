@@ -76,6 +76,7 @@ class GPT4TS_prompt(nn.Module):
                                          patch_num=self.patch_num-1,
                                          c_in=self.enc_in,
                                          num_prefix=configs.num_prefix,
+                                         multivariate_projection=configs.multivariate_projection,
                                          )
             print(f"Initializing randomly initialized GPT-2.")
         else:
@@ -85,7 +86,8 @@ class GPT4TS_prompt(nn.Module):
                 output_hidden_states=True,
                 patch_num=self.patch_num-1,
                 c_in=self.enc_in,
-                num_prefix=configs.num_prefix,                
+                num_prefix=configs.num_prefix,    
+                multivariate_projection=configs.multivariate_projection,            
             )
             print(f"Initializing pre-trained GPT-2.")
 

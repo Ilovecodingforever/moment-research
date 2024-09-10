@@ -17,15 +17,15 @@
 #  --train_batch_size 16\
 #  --dataset_names '/TimeseriesDatasets/forecasting/autoformer/national_illness.csv'
 
-# python scripts/finetuning/forecasting.py\
-#  --finetuning_mode 'linear-probing'\
-#  --config 'configs/forecasting/linear_probing.yaml'\
-#  --gpu_id 7\
-#  --forecast_horizon 60\
-#  --max_epoch 10\
-#  --init_lr 0.0001\
-#  --train_batch_size 16\
-#  --dataset_names '/TimeseriesDatasets/forecasting/autoformer/national_illness.csv'
+python scripts/finetuning/forecasting.py\
+ --finetuning_mode 'linear-probing'\
+ --config 'configs/forecasting/linear_probing.yaml'\
+ --gpu_id 2\
+ --forecast_horizon 60\
+ --max_epoch 10\
+ --init_lr 0.0001\
+ --train_batch_size 16\
+ --dataset_names 'data/Timeseries-PILE/forecasting/autoformer/national_illness.csv'
 
 # ### NBeats
 # python scripts/finetuning/forecasting.py\

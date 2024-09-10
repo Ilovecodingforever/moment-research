@@ -26,7 +26,8 @@ def forecast(
     dataset_names: str = "/TimeseriesDatasets/forecasting/autoformer/electricity.csv",
     random_seed: int = 13,
     forecast_horizon: int = 24,
-    lora: bool = False
+    lora: bool = False,
+    linear_probing: bool = False,
 ) -> None:
     config = Config(
         config_file_path=config_path, default_config_file_path=default_config_path
@@ -38,17 +39,17 @@ def forecast(
     # Set-up parameters and defaults
     config["device"] = gpu_id if torch.cuda.is_available() else "cpu"
     config["checkpoint_path"] = PATHS.CHECKPOINTS_DIR
-    
-    
-    
-    
+
+
+
+
     PATHS.RESULTS_DIR = PATHS.RESULTS_DIR + "/" + str(random_seed)
-    
-    
-    
+
+
+
     args = parse_config(config)
     make_dir_if_not_exists(config["checkpoint_path"])
-    
+
 
 
 
@@ -64,6 +65,8 @@ def forecast(
     args.forecast_horizon = forecast_horizon
 
     args.lora = lora
+    args.linear_probing = linear_probing
+
 
     print(f"Running experiments with config:\n{args}\n")
 
@@ -82,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config", type=str, default="configs/forecasting/gpt4ts_long_horizon.yaml", help="Path to config file"
     )
-    parser.add_argument("--gpu_id", type=int, default=1, help="GPU ID to use")
+    parser.add_argument("--gpu_id", type=int, default=2, help="GPU ID to use")
     parser.add_argument(
         "--train_batch_size", type=int, default=4, help="Training batch size"
     )
@@ -90,7 +93,7 @@ if __name__ == "__main__":
         "--val_batch_size", type=int, default=4, help="Validation batch size"
     )
     parser.add_argument(
-        "--init_lr", type=float, default=0.001, help="Peak learning rate"
+        "--init_lr", type=float, default=5e-5, help="Peak learning rate"
     )
     parser.add_argument("--n_channels", type=int, default=7, help="Number of channels")
     parser.add_argument(
@@ -107,11 +110,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--forecast_horizon", type=int, default=60, help="Forecast horizon"
     )
-    
+
     parser.add_argument(
-        "--lora", type=bool, default=True
+        "--lora", type=bool, default=False
     )
-    
+
+    parser.add_argument(
+        "--linear_probing", type=bool, default=True
+    )
+
     args = parser.parse_args()
 
     forecast(
@@ -125,4 +132,5 @@ if __name__ == "__main__":
         random_seed=args.random_seed,
         forecast_horizon=args.forecast_horizon,
         lora=args.lora,
+        linear_probing=args.linear_probing,
     )

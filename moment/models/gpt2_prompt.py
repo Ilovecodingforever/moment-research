@@ -24,126 +24,14 @@ from transformers.models.gpt2.modeling_gpt2 import (
 
 
 
-class GPT2Attention_prompt(GPT2Attention):
-    def __init__(self, config, is_cross_attention=False, layer_idx=None):
-        super().__init__(config, is_cross_attention=is_cross_attention, layer_idx=layer_idx)
-
-    def forward(
-        self,
-        hidden_states: Optional[Tuple[torch.FloatTensor]],
-        prompts: Optional[Tuple[torch.FloatTensor]] = None,
-        layer_past: Optional[Tuple[torch.Tensor]] = None,
-        attention_mask: Optional[torch.FloatTensor] = None,
-        head_mask: Optional[torch.FloatTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
-        encoder_attention_mask: Optional[torch.FloatTensor] = None,
-        use_cache: Optional[bool] = False,
-        output_attentions: Optional[bool] = False,
-    ) -> Tuple[Union[torch.Tensor, Tuple[torch.Tensor]], ...]:
-        if encoder_hidden_states is not None:
-            if not hasattr(self, "q_attn"):
-                raise ValueError(
-                    "If class is used as cross attention, the weights `q_attn` have to be defined. "
-                    "Please make sure to instantiate class with `GPT2Attention(..., is_cross_attention=True)`."
-                )
-
-            query = self.q_attn(hidden_states)
-            key, value = self.c_attn(encoder_hidden_states).split(self.split_size, dim=2)
-            attention_mask = encoder_attention_mask
-        else:
-            query, key, value = self.c_attn(hidden_states).split(self.split_size, dim=2)
-
-        query = self._split_heads(query, self.num_heads, self.head_dim)
-        key = self._split_heads(key, self.num_heads, self.head_dim)
-        value = self._split_heads(value, self.num_heads, self.head_dim)
-
-        if layer_past is not None:
-            past_key, past_value = layer_past
-            key = torch.cat((past_key, key), dim=-2)
-            value = torch.cat((past_value, value), dim=-2)
-
-
-        if prompts is not None:
-            key = torch.cat([prompts[0], key], dim=-2)
-            value = torch.cat([prompts[1], value], dim=-2)
-
-
-
-        if use_cache is True:
-            present = (key, value)
-        else:
-            present = None
-
-
-        assert attention_mask is None and head_mask is None
-
-        if self.reorder_and_upcast_attn:
-            attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
-        else:
-            attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
-
-        attn_output = self._merge_heads(attn_output, self.num_heads, self.head_dim)
-        attn_output = self.c_proj(attn_output)
-        attn_output = self.resid_dropout(attn_output)
-
-        outputs = (attn_output, present)
-        if output_attentions:
-            outputs += (attn_weights,)
-
-        return outputs  # a, present, (attentions)
-
-
 class GPT2Block_prompt(GPT2Block):
-    def __init__(self, config, c_in, head_dim, num_prefix, layer_idx=None):
+    def __init__(self, config, c_in, head_dim, num_prefix, multivariate_projection, layer_idx=None):
         super().__init__(config)
-        # hidden_size = config.hidden_size
-        # inner_dim = config.n_inner if config.n_inner is not None else 4 * hidden_size
-
-        # self.ln_1 = nn.LayerNorm(hidden_size, eps=config.layer_norm_epsilon)
-        self.attn = GPT2Attention_prompt(config, layer_idx=layer_idx)
-        # self.ln_2 = nn.LayerNorm(hidden_size, eps=config.layer_norm_epsilon)
-
-        # if config.add_cross_attention:
-        #     self.crossattention = GPT2Attention(config, is_cross_attention=True, layer_idx=layer_idx)
-        #     self.ln_cross_attn = nn.LayerNorm(hidden_size, eps=config.layer_norm_epsilon)
-
-        # self.mlp = GPT2MLP(inner_dim, config)
-
-        self.config = config
         self.c_in = c_in
-        self.head_dim = head_dim
         self.num_prefix = num_prefix
-
-        per_layer_dim = config.n_head * self.head_dim
-        total_dim = 2 * per_layer_dim
-        reparam_dim = 32
-        self.prompt_embed = (
-            nn.Sequential(
-                nn.Embedding(self.num_prefix*c_in, per_layer_dim),
-                nn.Linear(per_layer_dim, reparam_dim),
-                nn.Tanh(),
-                nn.Linear(reparam_dim, total_dim),
-            )
-        )
-        self.input_tokens = torch.arange(self.num_prefix*self.c_in)
-
-
-
-    def generate_prefix_item(self, input_ids, embedding):
-        bsz = input_ids.size(0)
-        input_tokens = self.input_tokens.unsqueeze(0).expand(bsz, -1).to(input_ids.device)
-        prefix = embedding(input_tokens)  # batch, seq, layer * embed * 2
-        prefix = prefix.view(
-            bsz,
-            self.num_prefix*self.c_in,
-            # self.config.num_hidden_layers,
-            2,
-            self.config.n_head,
-            self.head_dim,
-        )
-        # prefix = prefix.permute([3, 2, 0, 4, 1, 5])  # 2, num_layers, bsz, num_heads, num_prefix, d_kv
-        prefix = prefix.permute([2, 0, 3, 1, 4])  # 2, bsz, num_heads, num_prefix, d_kv
-        return prefix[0], prefix[1]
+        self.head_dim = head_dim
+        self.config = config
+        self.multivariate_projection = multivariate_projection
 
 
     def forward(
@@ -158,54 +46,59 @@ class GPT2Block_prompt(GPT2Block):
         output_attentions: Optional[bool] = False,
     ) -> Union[Tuple[torch.Tensor], Optional[Tuple[torch.Tensor, Tuple[torch.FloatTensor, ...]]]]:
         residual = hidden_states
-
-
+        
         hidden_states = self.ln_1(hidden_states)
-        # TODO: what about doing prompt here?
 
 
+        if self.multivariate_projection == 'attention':
 
-        n_channels = self.c_in
-        batch_size, seq_length, d_model = hidden_states.shape
-        batch_size_real = batch_size // n_channels
+            n_channels = self.c_in
+            batch_size, seq_length, d_model = hidden_states.shape
+            batch_size_real = batch_size // n_channels
 
-        hidden_states_ = hidden_states.reshape(-1, n_channels, seq_length, d_model)
-        hidden_states_proj = hidden_states_.transpose(1, 2).reshape(-1, n_channels, d_model)
-        # hidden_states_proj = self.ln_1(hidden_states_proj)
-        attn_output, attn_output_weights = self.shared_prompt_projection['mha'](self.shared_prompt_projection['q'](hidden_states_proj),
-                                                                                self.shared_prompt_projection['k'](hidden_states_proj),
-                                                                                self.shared_prompt_projection['v'](hidden_states_proj))
-        # attn_output = self.shared_prompt_projection['ln2'](self.shared_prompt_projection['act'](attn_output)).reshape(batch_size_real, seq_length, n_channels, -1).permute(0, 2, 3, 1)
-        attn_output = (attn_output).reshape(batch_size_real, seq_length, n_channels, -1).permute(0, 2, 3, 1)
+            hidden_states_ = hidden_states.reshape(-1, n_channels, seq_length, d_model)
+            hidden_states_proj = hidden_states_.transpose(1, 2).reshape(-1, n_channels, d_model)
+            # hidden_states_proj = self.ln_1(hidden_states_proj)
+            attn_output, attn_output_weights = self.shared_prompt_projection['mha'](self.shared_prompt_projection['q'](hidden_states_proj),
+                                                                                    self.shared_prompt_projection['k'](hidden_states_proj),
+                                                                                    self.shared_prompt_projection['v'](hidden_states_proj))
+            
+            
+            # attn_output = self.shared_prompt_projection['mha_proj'](attn_output)
+            
+            # attn_output = self.shared_prompt_projection['ln2'](self.shared_prompt_projection['act'](attn_output)).reshape(batch_size_real, seq_length, n_channels, -1).permute(0, 2, 3, 1)
+            attn_output = (attn_output).reshape(batch_size_real, seq_length, n_channels, -1).permute(0, 2, 3, 1)
 
-        # shared_prompt_projection_k = self.shared_prompt_projection['act'](self.shared_prompt_projection['linear_key'](attn_output)) # bs x channel x d_kv x (num_prefix*n_heads)
-        shared_prompt_projection_k = (self.shared_prompt_projection['linear_key'](attn_output)) # bs x channel x d_kv x (num_prefix*n_heads)
-        shared_prompt_projection_key = shared_prompt_projection_k.reshape(batch_size_real, n_channels, -1, self.num_prefix, self.config.n_head).permute(0, 4, 1, 3, 2).reshape(batch_size_real, self.config.n_head, n_channels*self.num_prefix, -1).repeat_interleave(n_channels, dim=0)
-        # shared_prompt_projection_v = self.shared_prompt_projection['act'](self.shared_prompt_projection['linear_value'](attn_output))
-        shared_prompt_projection_v = (self.shared_prompt_projection['linear_value'](attn_output))
-        shared_prompt_projection_value = shared_prompt_projection_v.reshape(batch_size_real, n_channels, -1, self.num_prefix, self.config.n_head).permute(0, 4, 1, 3, 2).reshape(batch_size_real, self.config.n_head, n_channels*self.num_prefix, -1).repeat_interleave(n_channels, dim=0)
+            # shared_prompt_projection_k = self.shared_prompt_projection['act'](self.shared_prompt_projection['linear_key'](attn_output)) # bs x channel x d_kv x (num_prefix*n_heads)
+            shared_prompt_projection_k = (self.shared_prompt_projection['linear_key'](attn_output)) # bs x channel x d_kv x (num_prefix*n_heads)
+            shared_prompt_projection_key = shared_prompt_projection_k.reshape(batch_size_real, n_channels, -1, self.num_prefix, self.config.n_head).permute(0, 4, 1, 3, 2).reshape(batch_size_real, self.config.n_head, n_channels*self.num_prefix, -1).repeat_interleave(n_channels, dim=0)
+            # shared_prompt_projection_v = self.shared_prompt_projection['act'](self.shared_prompt_projection['linear_value'](attn_output))
+            shared_prompt_projection_v = (self.shared_prompt_projection['linear_value'](attn_output))
+            shared_prompt_projection_value = shared_prompt_projection_v.reshape(batch_size_real, n_channels, -1, self.num_prefix, self.config.n_head).permute(0, 4, 1, 3, 2).reshape(batch_size_real, self.config.n_head, n_channels*self.num_prefix, -1).repeat_interleave(n_channels, dim=0)
 
-        # residual connection
-        # prefix_key, prefix_value = self.generate_prefix_item(hidden_states, self.prompt_embed)
-        shared_prompt_projection_key = self.prefix_key #+ shared_prompt_projection_key
-        shared_prompt_projection_value = self.prefix_value #+ shared_prompt_projection_value
+            # residual connection
+            # shared_prompt_projection_key = self.prefix_key + shared_prompt_projection_key
+            # shared_prompt_projection_value = self.prefix_value + shared_prompt_projection_value
+            
+            # shared_prompt_projection_key = torch.cat([prefix_key, shared_prompt_projection_key], dim=-2)
+            # shared_prompt_projection_value = torch.cat([prefix_value, shared_prompt_projection_value], dim=-2)
+
+            # TODO: maybe should ln here?
+            # TODO: different ln for key and value?
+            # shared_prompt_projection_key = self.shared_prompt_projection['dropout'](shared_prompt_projection_key)
+            # shared_prompt_projection_value = self.shared_prompt_projection['dropout'](shared_prompt_projection_value)
+            # shared_prompt_projection_key = self.shared_prompt_projection['ln3_k'](shared_prompt_projection_key)
+            # shared_prompt_projection_value = self.shared_prompt_projection['ln3_v'](shared_prompt_projection_value)
         
-        # shared_prompt_projection_key = torch.cat([prefix_key, shared_prompt_projection_key], dim=-2)
-        # shared_prompt_projection_value = torch.cat([prefix_value, shared_prompt_projection_value], dim=-2)
+        elif self.multivariate_projection == 'vanilla':
+            shared_prompt_projection_key = self.prefix_key
+            shared_prompt_projection_value = self.prefix_value
+            
+        else:
+            raise ValueError(f"multivariate_projection should be either 'attention' or 'vanilla'")
 
-        # TODO: maybe should ln here?
-        # TODO: different ln for key and value?
-        # shared_prompt_projection_key = self.shared_prompt_projection['dropout'](shared_prompt_projection_key)
-        # shared_prompt_projection_value = self.shared_prompt_projection['dropout'](shared_prompt_projection_value)
-        # shared_prompt_projection_key = self.shared_prompt_projection['ln3_k'](shared_prompt_projection_key)
-        # shared_prompt_projection_value = self.shared_prompt_projection['ln3_v'](shared_prompt_projection_value)
-        
-
-        # assert layer_past is None
-        # layer_past = (shared_prompt_projection_key, shared_prompt_projection_value)
-
-        prompts = (shared_prompt_projection_key, shared_prompt_projection_value)
-        # prompts = None
+        assert layer_past is None
+        layer_past = (shared_prompt_projection_key, shared_prompt_projection_value)
 
 
         if attention_mask is not None:
@@ -218,10 +111,8 @@ class GPT2Block_prompt(GPT2Block):
 
 
 
-
         attn_outputs = self.attn(
             hidden_states,
-            prompts=prompts,
             layer_past=layer_past,
             attention_mask=attention_mask,
             head_mask=head_mask,
@@ -272,14 +163,15 @@ class GPT2Block_prompt(GPT2Block):
 
 
 class GPT2Model_prompt(GPT2Model):
-    def __init__(self, config, patch_num, c_in, num_prefix):
+    def __init__(self, config, patch_num, c_in, num_prefix, multivariate_projection):
         super().__init__(config)
 
 
         head_dim = config.n_embd // config.n_head
         self.head_dim = head_dim
+        self.multivariate_projection = multivariate_projection
 
-        self.h = nn.ModuleList([GPT2Block_prompt(config, c_in, head_dim, num_prefix,
+        self.h = nn.ModuleList([GPT2Block_prompt(config, c_in, head_dim, num_prefix, multivariate_projection,
                                                  layer_idx=i) for i in range(config.num_hidden_layers)])
 
         self.c_in = c_in
@@ -291,79 +183,100 @@ class GPT2Model_prompt(GPT2Model):
         # head: config.n_head
 
 
-        # config.num_prefix = 1
-        # for block in self.h:
-        #     block.num_prefix = num_prefix
+
+        if self.multivariate_projection == 'attention':
+
+            # reparam_dim = 1048
+            reparam_dim = head_dim
+
+            # shared_prompt_projection_list = []
+
+            # for block in self.h:
+
+            # self.ln1 = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_epsilon)
+
+            self.shared_prompt_projection_k = nn.Linear(config.hidden_size, head_dim, bias=False)
+            self.shared_prompt_projection_q = nn.Linear(config.hidden_size, reparam_dim, bias=False)  # TODO: should dim be smaller than d_kv?
+            self.shared_prompt_projection_v = nn.Linear(config.hidden_size, head_dim, bias=False)
+
+            self.shared_prompt_projection_mha = nn.MultiheadAttention(reparam_dim, num_heads=4, batch_first=True,
+                                                                        kdim=head_dim, vdim=head_dim)
 
 
-        self.ln1 = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_epsilon)
-
-        self.shared_prompt_projection_k = nn.Linear(config.hidden_size, head_dim, bias=False)
-        self.shared_prompt_projection_q = nn.Linear(config.hidden_size, head_dim, bias=False)  # TODO: should dim be smaller than d_kv?
-        self.shared_prompt_projection_v = nn.Linear(config.hidden_size, head_dim, bias=False)
-
-        self.shared_prompt_projection_mha = nn.MultiheadAttention(head_dim, num_heads=4, batch_first=True,
-                                                                    kdim=head_dim, vdim=head_dim)
-
-        import torch.nn.functional as F
-        self.act = F.tanh
-
-        self.ln2 = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
-
-        self.shared_prompt_projection_linear_key = nn.Linear(patch_num, num_prefix*config.n_head)  # TODO: move this to before attention?
-        self.shared_prompt_projection_linear_value = nn.Linear(patch_num, num_prefix*config.n_head)
+            # self.mha_proj = nn.Linear(reparam_dim, head_dim)
 
 
-        self.ln3_k = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
-        self.ln3_v = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
+            import torch.nn.functional as F
+            # self.act = F.tanh
 
-        self.dropout = nn.Dropout(0.1)
+            # self.ln2 = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
 
-        # vanilla prompt tuning
-        per_layer_dim = config.n_head * head_dim
-        total_dim = config.num_hidden_layers * 2 * per_layer_dim
-        reparam_dim = 32
-        self.prompt_embed = (
-            nn.Sequential(
-                nn.Embedding(num_prefix*c_in, per_layer_dim),
-                nn.Linear(per_layer_dim, reparam_dim),
-                nn.Tanh(),
-                nn.Linear(reparam_dim, total_dim),
+            self.shared_prompt_projection_linear_key = nn.Linear(patch_num, num_prefix*config.n_head)  # TODO: move this to before attention?
+            self.shared_prompt_projection_linear_value = nn.Linear(patch_num, num_prefix*config.n_head)
+
+
+            # self.ln3_k = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
+            # self.ln3_v = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
+
+            # self.dropout = nn.Dropout(0.1)
+
+
+            self.shared_prompt_projection = torch.nn.ModuleDict({
+                'k': self.shared_prompt_projection_k,
+                'q': self.shared_prompt_projection_q,
+                'v': self.shared_prompt_projection_v,
+                'mha': self.shared_prompt_projection_mha,
+                # 'ln1': self.ln1,
+                # 'ln2': self.ln2,
+                # 'ln3_k': self.ln3_k,
+                # 'ln3_v': self.ln3_v,
+                # 'act': self.act,
+                # 'mha_proj': self.mha_proj,
+                'linear_key': self.shared_prompt_projection_linear_key,
+                'linear_value': self.shared_prompt_projection_linear_value,
+                # 'dropout': self.dropout,
+            })
+            
+            
+        # shared_prompt_projection_list.append(shared_prompt_projection)
+            
+        # self.shared_prompt_projection_list = nn.ModuleList(shared_prompt_projection_list)
+            
+
+            for i, block in enumerate(self.h):
+                block.shared_prompt_projection = self.shared_prompt_projection
+
+
+        elif self.multivariate_projection == 'vanilla':
+            # vanilla prompt tuning
+            per_layer_dim = config.n_head * head_dim
+            total_dim = config.num_hidden_layers * 2 * per_layer_dim
+            reparam_dim = 32
+            self.prompt_embed = (
+                nn.Sequential(
+                    nn.Embedding(num_prefix*c_in, per_layer_dim),
+                    nn.Linear(per_layer_dim, reparam_dim),
+                    nn.Tanh(),
+                    nn.Linear(reparam_dim, total_dim),
+                )
             )
-        )
-
-        self.shared_prompt_projection = {
-            'k': self.shared_prompt_projection_k,
-            'q': self.shared_prompt_projection_q,
-            'v': self.shared_prompt_projection_v,
-            'mha': self.shared_prompt_projection_mha,
-            # 'ln1': self.ln1,
-            # 'ln2': self.ln2,
-            # 'ln3_k': self.ln3_k,
-            # 'ln3_v': self.ln3_v,
-            # 'act': self.act,
-            'linear_key': self.shared_prompt_projection_linear_key,
-            'linear_value': self.shared_prompt_projection_linear_value,
-            # 'dropout': self.dropout,
-        }
-
-        for block in self.h:
-            block.shared_prompt_projection = self.shared_prompt_projection
-
+        else:
+            raise ValueError(f"multivariate_projection should be either 'attention' or 'vanilla'")  
 
         self.post_init()
 
 
 
     def forward(self, inputs_embeds=None, **kwargs):
-        self.input_tokens = torch.arange(self.num_prefix*self.c_in)
+        if self.multivariate_projection == 'vanilla':
+            self.input_tokens = torch.arange(self.num_prefix*self.c_in)
 
-        prefix_key, prefix_value = self.generate_prefix_item(inputs_embeds, self.prompt_embed)
-        # kwargs['use_cache'] = False
+            prefix_key, prefix_value = self.generate_prefix_item(inputs_embeds, self.prompt_embed)
+            # kwargs['use_cache'] = False
 
-        for block, k, v, in zip(self.h, prefix_key, prefix_value):
-            block.prefix_key = k
-            block.prefix_value = v
+            for block, k, v, in zip(self.h, prefix_key, prefix_value):
+                block.prefix_key = k
+                block.prefix_value = v
 
         output = super().forward(inputs_embeds=inputs_embeds, **kwargs)
         # self.clean_up()

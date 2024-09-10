@@ -27,6 +27,7 @@ def forecast(
     random_seed: int = 13,
     forecast_horizon: int = 24,
     num_prefix: int = 16,
+    multivariate_projection: str = "attention",
 ) -> None:
     config = Config(
         config_file_path=config_path, default_config_file_path=default_config_path
@@ -62,7 +63,7 @@ def forecast(
         args.init_lr = init_lr
 
     args.forecast_horizon = forecast_horizon
-
+    args.multivariate_projection = multivariate_projection
 
 
 
@@ -96,7 +97,7 @@ if __name__ == "__main__":
         "--val_batch_size", type=int, default=4, help="Validation batch size"
     )
     parser.add_argument(
-        "--init_lr", type=float, default=0.001, help="Peak learning rate"
+        "--init_lr", type=float, default=5e-5, help="Peak learning rate"
     )
     parser.add_argument("--n_channels", type=int, default=7, help="Number of channels")
     parser.add_argument(
@@ -115,7 +116,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--num_prefix", type=int, default=32, help="Forecast horizon"
+        "--num_prefix", type=int, default=16, help="Forecast horizon"
+    )
+
+    parser.add_argument(
+        "--multivariate_projection", type=str, default="attention", help="Multivariate projection"
     )
 
     args = parser.parse_args()
@@ -131,4 +136,5 @@ if __name__ == "__main__":
         random_seed=args.random_seed,
         forecast_horizon=args.forecast_horizon,
         num_prefix=args.num_prefix,
+        multivariate_projection=args.multivariate_projection,
     )
