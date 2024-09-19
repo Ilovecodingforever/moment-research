@@ -12,7 +12,7 @@ model.init()
 import os
 import torch
 
-path = 'results/moment_checkpoints/fearless-planet-52'
+path = '/home/scratch/mingzhul/moment-research/results/moment_checkpoints/fearless-planet-52'
 model_name = 'MOMENT_checkpoint_0'
 
 
@@ -26,7 +26,7 @@ model.save_pretrained(os.path.join(path, f"{model_name}"), from_pt=True)
 import os
 import torch
 # load from results/moment_checkpoints/fearless-planet-52/MOMENT_checkpoint_0/pytorch_model.bin
-with open('results/moment_checkpoints/fearless-planet-52/MOMENT_checkpoint_0/pytorch_model.bin', 'rb') as f:
+with open('/home/scratch/mingzhul/moment-research/results/moment_checkpoints/fearless-planet-52/MOMENT_checkpoint_0/pytorch_model.bin', 'rb') as f:
     model = torch.load(f)
 
 copy = {}
@@ -36,7 +36,7 @@ copy['model_state_dict'] = model
 # get rid of key
 copy['model_state_dict'].pop('patch_embedding.position_embedding.pe')
 
-path = 'results/moment_checkpoints/fearless-planet-52'
+path = '/home/scratch/mingzhul/moment-research/results/moment_checkpoints/fearless-planet-52'
 model_name = 'MOMENT_checkpoint_0'
 
 with open(os.path.join(path, f"{model_name}.pth"), "wb") as f:

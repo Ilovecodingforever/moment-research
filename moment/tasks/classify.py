@@ -63,7 +63,7 @@ class Classification(Tasks):
                     # trues.append(timeseries.detach().cpu().numpy())
                     # preds.append(outputs.reconstruction.detach().cpu().numpy())
                     trues.append(labels.detach().cpu().numpy())
-                    preds.append(outputs.detach().cpu().numpy())
+                    preds.append(outputs.logits.detach().cpu().numpy())
                     
         losses = np.array(losses)
         average_loss = np.average(losses)
@@ -154,7 +154,7 @@ class Classification(Tasks):
                 # observed_mask = observed_mask.unsqueeze(1).repeat((1, n_channels, 1))
                 # masked_loss = observed_mask * recon_loss
                 # loss = masked_loss.nansum() / (observed_mask.nansum() + 1e-7)
-                loss = self.criterion(outputs, labels)
+                loss = self.criterion(outputs.logits, labels)
 
                 self.logger.log(
                     {

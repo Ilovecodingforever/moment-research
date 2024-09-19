@@ -75,3 +75,4 @@ drop_last : False
 
 lora : False
 multivariate_projection: None
+max_lr: 0.01

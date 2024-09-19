@@ -1,7 +1,7 @@
 # Data loader parameters
 task_name: "classification"
-train_batch_size : 64 # 1024 2048 3072 4096
-val_batch_size: 256 # 1024 2048 3072 4096 
+train_batch_size : 1 # 1024 2048 3072 4096
+val_batch_size: 4 # 1024 2048 3072 4096 
 shuffle: True
 num_workers: 5
 pin_memory: True

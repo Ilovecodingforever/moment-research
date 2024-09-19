@@ -208,6 +208,8 @@ class ClassificationDataset(TaskDataset):
         for i, l in enumerate(labels):
             transform[l] = i
 
+        # if see ValueError: cannot call `vectorize` on size 0 inputs unless `otypes` is set                                                   
+        # file empty, go download again
         train_labels = np.vectorize(transform.get)(train_labels)
         test_labels = np.vectorize(transform.get)(test_labels)
 
@@ -237,7 +239,10 @@ class ClassificationDataset(TaskDataset):
         # TODO: shuffle the data?
         idx = np.random.permutation(len(self.data))
 
-        self.data = self.data[idx]
+        if isinstance(self.data, np.ndarray):
+            self.data = self.data[idx]
+        else:
+            self.data = [self.data[i] for i in idx]
         self.labels = self.labels[idx]
 
 

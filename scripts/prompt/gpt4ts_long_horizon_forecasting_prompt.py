@@ -12,7 +12,6 @@ from moment.tasks.forecast_finetune import ForecastFinetuning
 from moment.utils.config import Config
 from moment.utils.utils import control_randomness, make_dir_if_not_exists, parse_config
 
-NOTES = "Pre-training GPT4TS for long forecasting"
 
 
 def forecast(
@@ -59,6 +58,9 @@ def forecast(
     args.finetuning_mode = "end-to-end"
     args.dataset_names = dataset_names
     args.n_channels = n_channels
+    
+    args.random_seed = random_seed
+    
     if init_lr is not None:
         args.init_lr = init_lr
 
@@ -124,6 +126,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    NOTES = f"Pre-training GPT4TS for long forecasting, multivariate_projection: {args.multivariate_projection}, forecast_horizon: {args.forecast_horizon}, num_prefix: {args.num_prefix}"
+
 
     forecast(
         config_path=args.config,

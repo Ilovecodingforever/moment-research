@@ -48,7 +48,6 @@ SMALL_SPECTRO_DATASETS = ["Wine", "Strawberry", "Coffee", "Ham", "Meat", "Beef"]
 
 
 
-NOTES = "Training gpt4ts for classification"
 
 
 
@@ -57,6 +56,8 @@ def run_experiment(
     config_path: str = None,
     gpu_id: str = "0",
     random_seed: int = 13,
+    multivariate_projection: str = 'attention',
+    num_prefix: int = 16,
 ):
     # Load arguments and parse them
     config = Config(
@@ -85,6 +86,12 @@ def run_experiment(
     control_randomness(seed=random_seed)
 
     
+    NOTES = f"Training gpt4ts for classification, multivariate_projection: {multivariate_projection}"
+    
+    args.model_name = "GPT4TS_prompt"
+    args.multivariate_projection = multivariate_projection
+    args.num_prefix = num_prefix
+    args.random_seed = random_seed
     
     
     all_classification_datasets = uea_classification_datasets
@@ -101,9 +108,6 @@ def run_experiment(
             args.upsampling_type = "pad"
 
         args.dataset_names = dataset_name
-
-
-        args.model_name = "GPT4TS_prompt"
 
 
         print(f"Running experiments with config:\n{args}\n")
@@ -141,13 +145,24 @@ if __name__ == "__main__":
         "--random_seed", type=int, default=13, help="Random seed for reproducibility"
     )
 
+    parser.add_argument(
+        "--num_prefix", type=int, default=16, help="Random seed for reproducibility"
+    )
 
+
+    parser.add_argument(
+        "--multivariate_projection", type=str, default='attention', help="Random seed for reproducibility"
+    )
 
     args = parser.parse_args()
+
+
 
     run_experiment(
         # experiment_name=args.experiment_name,
         config_path=args.config_path,
         gpu_id=args.gpu_id,
         random_seed=args.random_seed,
+        multivariate_projection=args.multivariate_projection,
+        num_prefix=args.num_prefix,
     )

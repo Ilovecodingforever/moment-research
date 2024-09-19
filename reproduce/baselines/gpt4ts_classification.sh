@@ -3,7 +3,7 @@
 export PYTHONPATH="/zfsauton2/home/mingzhul/time-series-prompt/moment-research"
 
 
-export WANDB_MODE="offline"
+# export WANDB_MODE="offline"
 
 
 ### 

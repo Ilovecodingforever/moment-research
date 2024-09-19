@@ -48,7 +48,6 @@ SMALL_SPECTRO_DATASETS = ["Wine", "Strawberry", "Coffee", "Ham", "Meat", "Beef"]
 
 
 
-NOTES = "Training gpt4ts for classification"
 
 
 
@@ -57,6 +56,8 @@ def run_experiment(
     config_path: str = None,
     gpu_id: str = "0",
     random_seed: int = 13,
+    lora: bool = False,
+    linear_probing: bool = False,    
 ):
     # Load arguments and parse them
     config = Config(
@@ -85,6 +86,10 @@ def run_experiment(
     control_randomness(seed=random_seed)
 
 
+    NOTES = f"Training gpt4ts for classification, lora: {lora}, linear_probing: {linear_probing}"
+    args.lora = lora
+    args.linear_probing = linear_probing
+    args.random_seed = random_seed
 
 
     all_classification_datasets = uea_classification_datasets
@@ -135,10 +140,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--lora", type=str, default=False
+        "--lora", type=bool, default=False
     )
 
-
+    parser.add_argument(
+        "--linear_probing", type=bool, default=False
+    )
 
     args = parser.parse_args()
 
@@ -147,4 +154,6 @@ if __name__ == "__main__":
         config_path=args.config_path,
         gpu_id=args.gpu_id,
         random_seed=args.random_seed,
+        lora=args.lora,
+        linear_probing=args.linear_probing,        
     )
