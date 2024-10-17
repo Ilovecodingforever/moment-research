@@ -25,13 +25,14 @@ from transformers.models.gpt2.modeling_gpt2 import (
 
 
 class GPT2Block_prompt(GPT2Block):
-    def __init__(self, config, c_in, head_dim, num_prefix, multivariate_projection, layer_idx=None):
+    def __init__(self, config, c_in, head_dim, num_prefix, multivariate_projection, agg, layer_idx=None):
         super().__init__(config)
         self.c_in = c_in
         self.num_prefix = num_prefix
         self.head_dim = head_dim
         self.config = config
         self.multivariate_projection = multivariate_projection
+        self.agg = agg
 
 
     def forward(
@@ -70,10 +71,17 @@ class GPT2Block_prompt(GPT2Block):
             attn_output = (attn_output).reshape(batch_size_real, seq_length, n_channels, -1).permute(0, 2, 3, 1)
 
             # shared_prompt_projection_k = self.shared_prompt_projection['act'](self.shared_prompt_projection['linear_key'](attn_output)) # bs x channel x d_kv x (num_prefix*n_heads)
-            shared_prompt_projection_k = (self.shared_prompt_projection['linear_key'](attn_output)) # bs x channel x d_kv x (num_prefix*n_heads)
-            shared_prompt_projection_key = shared_prompt_projection_k.reshape(batch_size_real, n_channels, -1, self.num_prefix, self.config.n_head).permute(0, 4, 1, 3, 2).reshape(batch_size_real, self.config.n_head, n_channels*self.num_prefix, -1).repeat_interleave(n_channels, dim=0)
             # shared_prompt_projection_v = self.shared_prompt_projection['act'](self.shared_prompt_projection['linear_value'](attn_output))
-            shared_prompt_projection_v = (self.shared_prompt_projection['linear_value'](attn_output))
+            
+            if self.agg == 'mlp':
+                shared_prompt_projection_k = self.shared_prompt_projection['agg_key'](attn_output) # bs x channel x d_kv x (num_prefix*n_heads)
+                shared_prompt_projection_v = self.shared_prompt_projection['agg_value'](attn_output)
+
+            elif self.agg == 'rnn':
+                shared_prompt_projection_k = self.shared_prompt_projection['agg_key'](attn_output.reshape(batch_size, seq_length, -1))[0][:, -1, :].reshape(batch_size_real, n_channels, -1)
+                shared_prompt_projection_v = self.shared_prompt_projection['agg_value'](attn_output.reshape(batch_size, seq_length, -1))[0][:, -1, :].reshape(batch_size_real, n_channels, -1)
+
+            shared_prompt_projection_key = shared_prompt_projection_k.reshape(batch_size_real, n_channels, -1, self.num_prefix, self.config.n_head).permute(0, 4, 1, 3, 2).reshape(batch_size_real, self.config.n_head, n_channels*self.num_prefix, -1).repeat_interleave(n_channels, dim=0)
             shared_prompt_projection_value = shared_prompt_projection_v.reshape(batch_size_real, n_channels, -1, self.num_prefix, self.config.n_head).permute(0, 4, 1, 3, 2).reshape(batch_size_real, self.config.n_head, n_channels*self.num_prefix, -1).repeat_interleave(n_channels, dim=0)
 
             # residual connection
@@ -163,15 +171,16 @@ class GPT2Block_prompt(GPT2Block):
 
 
 class GPT2Model_prompt(GPT2Model):
-    def __init__(self, config, patch_num, c_in, num_prefix, multivariate_projection):
+    def __init__(self, config, patch_num, c_in, num_prefix, multivariate_projection, agg):
         super().__init__(config)
 
 
         head_dim = config.n_embd // config.n_head
         self.head_dim = head_dim
         self.multivariate_projection = multivariate_projection
+        self.agg = agg
 
-        self.h = nn.ModuleList([GPT2Block_prompt(config, c_in, head_dim, num_prefix, multivariate_projection,
+        self.h = nn.ModuleList([GPT2Block_prompt(config, c_in, head_dim, num_prefix, multivariate_projection, agg,
                                                  layer_idx=i) for i in range(config.num_hidden_layers)])
 
         self.c_in = c_in
@@ -211,8 +220,17 @@ class GPT2Model_prompt(GPT2Model):
 
             # self.ln2 = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
 
-            self.shared_prompt_projection_linear_key = nn.Linear(patch_num, num_prefix*config.n_head)  # TODO: move this to before attention?
-            self.shared_prompt_projection_linear_value = nn.Linear(patch_num, num_prefix*config.n_head)
+
+            if self.agg == 'mlp':
+                self.shared_prompt_projection_agg_key = nn.Linear(patch_num, num_prefix*config.n_head)  # TODO: move this to before attention?
+                self.shared_prompt_projection_agg_value = nn.Linear(patch_num, num_prefix*config.n_head)                
+            elif self.agg == 'rnn':
+                # TODO: does the dimensions make sense? input is less than output
+                self.shared_prompt_projection_agg_key = nn.RNN(reparam_dim, reparam_dim*num_prefix*config.n_head, batch_first=True)
+                self.shared_prompt_projection_agg_value = nn.RNN(reparam_dim, reparam_dim*num_prefix*config.n_head, batch_first=True)
+            else:
+                raise ValueError('Invalid aggregation type')
+
 
 
             # self.ln3_k = nn.LayerNorm(head_dim, eps=config.layer_norm_epsilon)
@@ -232,8 +250,8 @@ class GPT2Model_prompt(GPT2Model):
                 # 'ln3_v': self.ln3_v,
                 # 'act': self.act,
                 # 'mha_proj': self.mha_proj,
-                'linear_key': self.shared_prompt_projection_linear_key,
-                'linear_value': self.shared_prompt_projection_linear_value,
+                'agg_key': self.shared_prompt_projection_agg_key,
+                'agg_value': self.shared_prompt_projection_agg_value,
                 # 'dropout': self.dropout,
             })
             

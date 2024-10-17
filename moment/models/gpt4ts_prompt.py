@@ -77,6 +77,7 @@ class GPT4TS_prompt(nn.Module):
                                          c_in=self.enc_in,
                                          num_prefix=configs.num_prefix,
                                          multivariate_projection=configs.multivariate_projection,
+                                         agg=configs.agg,
                                          )
             print(f"Initializing randomly initialized GPT-2.")
         else:
@@ -86,8 +87,9 @@ class GPT4TS_prompt(nn.Module):
                 output_hidden_states=True,
                 patch_num=self.patch_num-1,
                 c_in=self.enc_in,
-                num_prefix=configs.num_prefix,    
-                multivariate_projection=configs.multivariate_projection,            
+                num_prefix=configs.num_prefix,
+                multivariate_projection=configs.multivariate_projection,
+                agg=configs.agg,
             )
             print(f"Initializing pre-trained GPT-2.")
 
@@ -119,7 +121,7 @@ class GPT4TS_prompt(nn.Module):
         if self.freeze_transformer_backbone and not self.randomly_initialize_backbone:
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
                 # if "ln" in name or "wpe" in name:
-                if "ln" in name or "wpe" in name or "prompt" in name:
+                if "ln" in name or "wpe" in name or "prompt" in name or "out" in name:
                 # if "prompt" in name:
                     param.requires_grad = True
                 else:
@@ -158,7 +160,7 @@ class GPT4TS_prompt(nn.Module):
             # original gpt4ts repo
             import torch.nn.functional as F
             self.act = F.gelu
-            
+
             if reduction == "mean":
                 self.out_layer = nn.Linear(self.d_model * self.seq_len, configs.num_class)
                 self.ln_proj = nn.LayerNorm(self.d_model * self.seq_len)
@@ -172,7 +174,7 @@ class GPT4TS_prompt(nn.Module):
 
 
 
-                    
+
         # self.enc_embedding.value_embedding.tokenConv.weight.requires_grad = False
         # self.out_layer.weight.requires_grad = False
         # self.out_layer.bias.requires_grad = False
@@ -209,8 +211,8 @@ class GPT4TS_prompt(nn.Module):
         x_enc = x_enc.reshape(
             (-1, 1, x_enc.shape[-1])
         )
-        
-        
+
+
 
         # Normalization from Non-stationary Transformer
         means = x_enc.mean(2, keepdim=True).detach()
@@ -392,7 +394,7 @@ class GPT4TS_prompt(nn.Module):
         x_enc_ = x_enc.reshape(
             (-1, 1, x_enc.shape[-1])
         )
-        
+
         # embedding
         enc_out = self.enc_embedding(x_enc_, None)  # [B,T,C]
         # TODO: this line is not in the original gpt4ts repo

@@ -6,9 +6,9 @@ shuffle: True
 num_workers: 5
 pin_memory: True
 scale : False # Do not scale short horizon datasets
-train_ratio : 0.7
-val_ratio : 0.1
-test_ratio : 0.2
+# train_ratio : 0.7
+# val_ratio : 0.1
+# test_ratio : 0.2
 random_seed : 13
 upsampling_pad_direction : "backward"
 upsampling_type : "pad" # pad by default
@@ -52,3 +52,6 @@ scale : True  # should scale, like imputation
 loss_type: "mse" # MSE by default
 
 
+train_ratio : 0.6
+val_ratio : 0.1
+test_ratio : 0.3

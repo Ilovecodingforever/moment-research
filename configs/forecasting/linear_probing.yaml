@@ -49,3 +49,6 @@ weight_decay: 0
 torch_dtype: "float16"
 train_batch_size : 4 # 1024 2048 3072 4096
 val_batch_size: 4 # 1024 2048 3072 4096 
+train_ratio : 0.6
+val_ratio : 0.1
+test_ratio : 0.3
